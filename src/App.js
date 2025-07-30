@@ -20,6 +20,8 @@ import Result from './components/NewDashboard/scenes/result/Result';
 import UpcomingElection from './components/NewDashboard/scenes/upcoming/UpcomingElection';
 import InvalidVotes from './components/NewDashboard/scenes/invalidVotes/InvalidVotes';
 import VideoCaptureDiagnostic from './components/VideoCaptureDiagnostic';
+import MLDocumentTraining from './components/MLDocumentTraining';
+import DocumentClassifier from './components/DocumentClassifier';
 
 const Routing = ()=>{
 
@@ -44,6 +46,8 @@ const Routing = ()=>{
       <Route path="/upcoming" element = {<UpcomingElection/>}/>
       <Route path="/invalidVotes" element = {<InvalidVotes/>}/>
       <Route path="/diagnostic" element = {<VideoCaptureDiagnostic/>}/>
+      <Route path="/ml-training" element = {<MLDocumentTraining/>}/>
+      <Route path="/document-classifier" element = {<DocumentClassifier/>}/>
     </Routes>
   )
 }
