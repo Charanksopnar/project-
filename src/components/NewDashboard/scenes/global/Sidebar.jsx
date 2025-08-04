@@ -198,27 +198,7 @@ const Sidebar = () => {
                             setSelected={setSelected}
                         />
 
-                        <Typography
-                            variant="h6"
-                            color={colors.grey[300]}
-                            sx={{ m: "15px 0 5px 20px" }}
-                        >
-                            Machine Learning
-                        </Typography>
-                        <Item
-                            title="ML Document Training"
-                            to="/ml-training"
-                            icon={<PersonOutlinedIcon />}
-                            selected={selected}
-                            setSelected={setSelected}
-                        />
-                        <Item
-                            title="Document Classifier"
-                            to="/document-classifier"
-                            icon={<ContactsOutlinedIcon />}
-                            selected={selected}
-                            setSelected={setSelected}
-                        />
+
 
                         <Typography
                             variant="h6"

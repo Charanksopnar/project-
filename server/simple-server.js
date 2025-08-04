@@ -35,6 +35,7 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Simple mock data
 const mockCandidates = [
@@ -1328,6 +1329,8 @@ app.get('/getInvalidVotes', (req, res) => {
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Server is healthy' });
 });
+
+
 
 // Start server
 app.listen(PORT, '0.0.0.0', () => {

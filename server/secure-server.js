@@ -44,7 +44,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Create necessary directories if they don't exist
-const directories = ['uploads', 'logs', 'models', 'models/voice', 'models/fraud'];
+const directories = ['uploads', 'logs'];
 directories.forEach(dir => {
   const dirPath = path.join(__dirname, dir);
   if (!fs.existsSync(dirPath)) {
@@ -54,14 +54,13 @@ directories.forEach(dir => {
 
 // Import security routes (temporarily commented out due to TensorFlow dependency)
 // const securityRoutes = require('./routes/securityRoutes');
-const mlDocumentRoutes = require('./routes/mlDocumentRoutes');
 
 // Import biometric modules for initialization (temporarily commented out)
 // const faceRecognition = require('./biometrics/faceRecognition');
 // const voiceDetection = require('./biometrics/voiceDetection');
 // const fraudDetection = require('./ai/fraudDetection');
 // Use demo version temporarily until TensorFlow.js is installed
-const documentClassification = require('./ai/documentClassificationDemo');
+// const documentClassification = require('./ai/documentClassificationDemo');
 
 // Simple mock data (same as in simple-server.js)
 const mockCandidates = [
@@ -135,9 +134,6 @@ app.get('/', (req, res) => {
 
 // Use security routes (temporarily commented out)
 // app.use('/api/security', securityRoutes);
-
-// Use ML document routes
-app.use('/api/ml-documents', mlDocumentRoutes);
 
 // Basic routes (same as in simple-server.js)
 
@@ -406,18 +402,18 @@ app.listen(PORT, '0.0.0.0', () => {
     // voiceDetection.loadVoiceModels();
     // fraudDetection.loadFraudModels();
 
-    // Initialize ML document classification system
-    documentClassification.initializeDocumentClassification()
-      .then(success => {
-        if (success) {
-          logger.info('ML Document Classification system initialized successfully');
-        } else {
-          logger.warn('ML Document Classification system initialization failed');
-        }
-      })
-      .catch(error => {
-        logger.error('Error initializing ML Document Classification system', { error: error.message });
-      });
+    // Initialize ML document classification system (commented out - moved to separate system)
+    // documentClassification.initializeDocumentClassification()
+    //   .then(success => {
+    //     if (success) {
+    //       logger.info('ML Document Classification system initialized successfully');
+    //     } else {
+    //       logger.warn('ML Document Classification system initialization failed');
+    //     }
+    //   })
+    //   .catch(error => {
+    //     logger.error('Error initializing ML Document Classification system', { error: error.message });
+    //   });
 
     logger.info('Security modules initialized successfully');
   } catch (error) {

@@ -26,6 +26,8 @@ app.use(express.urlencoded({ extended: true }));
 // Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+
+
 // Mock API Routes
 
 // Login route
@@ -164,8 +166,20 @@ app.get('/getDashboardData', (req, res) => {
 
 // Default route
 app.get('/', (req, res) => {
-  res.send('Online Voting System API is running');
+  res.send(`
+    <h1>🗳️ Online Voting System API</h1>
+    <p>Server is running successfully!</p>
+    <h2>📚 API Documentation</h2>
+    <ul>
+      <li>POST /createVoter - Register a new voter</li>
+      <li>POST /login - Login voter</li>
+      <li>GET /getCandidate - Get all candidates</li>
+      <li>GET /getDashboardData - Get dashboard statistics</li>
+    </ul>
+  `);
 });
+
+
 
 // 404 handler
 app.use((req, res) => {
