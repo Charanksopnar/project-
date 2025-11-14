@@ -57,7 +57,6 @@ Online-Voting-System/
 ### Prerequisites
 
 - Node.js 14 or higher
-- MongoDB (for data storage)
 - Modern web browser with camera/microphone support
 
 ### Installation
@@ -83,16 +82,11 @@ Online-Voting-System/
    # Create .env file in server directory
    cd server
    cp .env.example .env
-   # Edit .env with your configuration
+   # Edit .env with your configuration (only JWT_SECRET is required)
    ```
 
-4. **Database Setup**:
-   ```bash
-   # Start MongoDB service
-   # Run database seeding
-   cd server
-   npm run seed
-   ```
+4. **Data**:
+   No database is required. The server uses `server/mockDb.js` for test data (users, candidates, elections). Edit that file to modify mock data for development.
 
 ### Running the Application
 
@@ -167,10 +161,9 @@ npm run build         # Build for production
 npm test              # Run tests
 
 # Backend
-npm run dev           # Start development server with nodemon
-npm run start         # Start production server
-npm run seed          # Seed database with sample data
-npm run setup         # Initialize uploads and seed data
+cd server
+npm run dev           # Start development server with nodemon (uses mock DB)
+npm run start         # Start production server (uses mock DB)
 ```
 
 ### Project Structure

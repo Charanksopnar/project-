@@ -16,6 +16,7 @@ const multer = require('multer');
 const fs = require('fs');
 const logger = require('./utils/logger');
 const errorHandler = require('./utils/errorHandler');
+const { runPython } = require('./biometrics/pythonRunner');
 
 // Initialize Express app
 const app = express();
@@ -130,6 +131,45 @@ const mockElections = [
 // Routes
 app.get('/', (req, res) => {
   res.send('Secure Voting API is running');
+});
+
+// Face enrollment endpoint (calls python multi-angle capture in enroll mode)
+app.post('/api/face/enroll/:id', async (req, res) => {
+  const userId = req.params.id;
+  try {
+    const script = path.join(__dirname, 'biometrics', 'multi_angle_capture.py');
+    const { code, stdout, stderr, killed } = await runPython(script, ['--mode', 'enroll', '--id', userId], { timeout: 180000 });
+    if (killed) {
+      return res.status(500).json({ success: false, message: 'Enrollment timed out', stdout, stderr });
+    }
+    if (code === 0) {
+      return res.json({ success: true, message: 'Enrollment completed', stdout });
+    }
+    return res.status(500).json({ success: false, message: 'Enrollment failed', code, stdout, stderr });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Enrollment error', error: err.message });
+  }
+});
+
+// Face verification endpoint (calls python multi-angle capture in verify mode)
+app.post('/api/face/verify/:id', async (req, res) => {
+  const userId = req.params.id;
+  try {
+    const script = path.join(__dirname, 'biometrics', 'multi_angle_capture.py');
+    const { code, stdout, stderr, killed } = await runPython(script, ['--mode', 'verify', '--id', userId], { timeout: 180000 });
+    if (killed) {
+      return res.status(500).json({ success: false, message: 'Verification timed out', stdout, stderr });
+    }
+    if (code === 0) {
+      return res.json({ success: true, message: 'Verification successful', stdout });
+    }
+    if (code === 2) {
+      return res.status(403).json({ success: false, message: 'Verification failed', stdout, stderr });
+    }
+    return res.status(500).json({ success: false, message: 'Verification error', code, stdout, stderr });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Verification error', error: err.message });
+  }
 });
 
 // Use security routes (temporarily commented out)

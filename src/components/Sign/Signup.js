@@ -22,7 +22,7 @@ const stateCityMapping = {
     "Haryana": ["Chandigarh", "Gurugram"],
     "Himachal Pradesh": ["Shimla", "Manali"],
     "Jharkhand": ["Ranchi", "Jamshedpur"],
-    "Karnataka": ["Bengaluru", "Mysore"],
+    "Karnataka": ["Bengaluru", "Mysore","Chitradurga"],
     "Kerala": ["Thiruvananthapuram", "Kochi"],
     "Madhya Pradesh": ["Bhopal", "Indore"],
     "Maharashtra": ["Mumbai", "Pune"],

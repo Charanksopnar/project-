@@ -1,6 +1,6 @@
 # Online Voting System - Server
 
-This is the server-side component of the Online Voting System, built with Node.js, Express, and MongoDB.
+This is the server-side component of the Online Voting System, built with Node.js and Express. The project has been configured to use local/mock storage (server/mockDb.js) instead of MongoDB for easier testing.
 
 ## Features
 
@@ -45,32 +45,16 @@ This is the server-side component of the Online Voting System, built with Node.j
    npm install
    ```
 
-2. Create a `.env` file with the following variables:
+2. Create a `.env` file with the following variables (only JWT_SECRET is required):
    ```
    PORT=5000
-   MONGODB_URI=your_mongodb_connection_string
    JWT_SECRET=your_jwt_secret
    NODE_ENV=development
    ```
 
-   You can copy the `.env.example` file and update it with your own values:
-   ```
-   cp .env.example .env
-   ```
+   You can copy the `.env.example` file and update it with your own values.
 
-3. Initialize the project (creates upload directories and seeds the database):
-   ```
-   npm run setup
-   ```
-
-   Or you can run these steps individually:
-   ```
-   # Create upload directories
-   npm run init-uploads
-
-   # Seed the database with sample data
-   npm run seed
-   ```
+3. No database setup is required. The server uses `server/mockDb.js` for test data. To change test users or candidates, edit that file directly.
 
 4. Start the server:
    ```
@@ -94,10 +78,4 @@ This is the server-side component of the Online Voting System, built with Node.j
 Username: admin
 Password: admin@123
 
-These credentials are automatically created when the server starts if no admin exists in the database.
-
-### Test User
-Email: user@gmail.com
-Password: 123
-
-This test user is created when you run the seed script.
+These test credentials are available in `server/mockDb.js`.

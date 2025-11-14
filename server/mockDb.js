@@ -52,7 +52,7 @@ const mockDb = {
     {
       _id: '1',
       username: 'admin',
-      password: '$2a$10$XOPbrlUPQdwdJUpSrIF6X.LbE14qsMmKGhM1A8W9iqaG3vv1BD7WC' // hashed 'admin@123'
+      password: '$2a$10$XOPbrlUPQdwdJUpSrIF6X.LbE14qsMmKGhM1A8W9iqaG3vv1BD7WC' // hashed '123'
     }
   ],
   elections: [

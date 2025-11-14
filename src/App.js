@@ -20,6 +20,8 @@ import Result from './components/NewDashboard/scenes/result/Result';
 import UpcomingElection from './components/NewDashboard/scenes/upcoming/UpcomingElection';
 import InvalidVotes from './components/NewDashboard/scenes/invalidVotes/InvalidVotes';
 import VideoCaptureDiagnostic from './components/VideoCaptureDiagnostic';
+import IdVerification from './components/IdVerification/IdVerification';
+import CameraTest from './components/CameraTest';
 
 
 const Routing = ()=>{
@@ -45,6 +47,8 @@ const Routing = ()=>{
       <Route path="/upcoming" element = {<UpcomingElection/>}/>
       <Route path="/invalidVotes" element = {<InvalidVotes/>}/>
       <Route path="/diagnostic" element = {<VideoCaptureDiagnostic/>}/>
+      <Route path="/verify-id" element = {<IdVerification/>}/>
+      <Route path="/camera-test" element = {<CameraTest/>}/>
 
     </Routes>
   )

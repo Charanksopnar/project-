@@ -4,12 +4,12 @@ const dotenv = require('dotenv');
 const path = require('path');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+// Use local mock DB (no MongoDB)
+const mockDb = require('./mockDb');
 
 // Load environment variables
 dotenv.config();
 
-// Import mock database
-const mockDb = require('./mockDb');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -31,10 +31,10 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Mock API Routes
 
 // Login route
-app.post('/login', (req, res) => {
+app.post('/login', async (req, res) => {
   const { username, password } = req.body;
 
-  console.log('Login attempt:', { username, password });
+  console.log('Login attempt:', { username });
 
   // Find voter by username or email
   const voter = mockDb.voters.find(v => v.username === username || v.email === username);
@@ -44,38 +44,44 @@ app.post('/login', (req, res) => {
     return res.status(200).json({ success: false, message: 'Invalid credentials' });
   }
 
-  // In a real app, we would compare hashed passwords
-  // For demo, we'll just check if the password is '123'
-  if (password !== '123') {
-    console.log('Invalid password');
-    return res.status(200).json({ success: false, message: 'Invalid credentials' });
-  }
+  try {
+    // Compare provided password with stored hashed password
+    const match = await bcrypt.compare(password || '', voter.password || '');
 
-  // Create JWT token
-  const token = jwt.sign({ id: voter._id }, process.env.JWT_SECRET || 'fallback_secret', { expiresIn: '1d' });
-
-  console.log('Login successful for:', voter.email);
-
-  res.status(200).json({
-    success: true,
-    token,
-    voterObject: {
-      _id: voter._id,
-      name: voter.name,
-      username: voter.username,
-      email: voter.email,
-      age: voter.age,
-      voteStatus: voter.voteStatus,
-      profilePic: voter.profilePic
+    if (!match) {
+      console.log('Invalid password');
+      return res.status(200).json({ success: false, message: 'Invalid credentials' });
     }
-  });
+
+    // Create JWT token
+    const token = jwt.sign({ id: voter._id }, process.env.JWT_SECRET || 'fallback_secret', { expiresIn: '1d' });
+
+    console.log('Login successful for:', voter.email);
+
+    return res.status(200).json({
+      success: true,
+      token,
+      voterObject: {
+        _id: voter._id,
+        name: voter.name,
+        username: voter.username,
+        email: voter.email,
+        age: voter.age,
+        voteStatus: voter.voteStatus,
+        profilePic: voter.profilePic
+      }
+    });
+  } catch (err) {
+    console.error('Error during login password comparison:', err);
+    return res.status(500).json({ success: false, message: 'Server error' });
+  }
 });
 
 // Admin login route
-app.post('/adminlogin', (req, res) => {
+app.post('/adminlogin', async (req, res) => {
   const { username, password } = req.body;
 
-  console.log('Admin login attempt:', { username, password });
+  console.log('Admin login attempt:', { username });
 
   // Find admin by username
   const admin = mockDb.admins.find(a => a.username === username);
@@ -85,26 +91,31 @@ app.post('/adminlogin', (req, res) => {
     return res.status(200).json({ success: false, message: 'Invalid credentials' });
   }
 
-  // In a real app, we would compare hashed passwords
-  // For demo, we'll just check if the password is 'admin@123'
-  if (password !== 'admin@123') {
-    console.log('Invalid admin password');
-    return res.status(200).json({ success: false, message: 'Invalid credentials' });
-  }
+  try {
+    const match = await bcrypt.compare(password || '', admin.password || '');
 
-  // Create JWT token
-  const token = jwt.sign({ id: admin._id }, process.env.JWT_SECRET || 'fallback_secret', { expiresIn: '1d' });
-
-  console.log('Admin login successful for:', admin.username);
-
-  res.status(200).json({
-    success: true,
-    token,
-    admin: {
-      _id: admin._id,
-      username: admin.username
+    if (!match) {
+      console.log('Invalid admin password');
+      return res.status(200).json({ success: false, message: 'Invalid credentials' });
     }
-  });
+
+    // Create JWT token
+    const token = jwt.sign({ id: admin._id }, process.env.JWT_SECRET || 'fallback_secret', { expiresIn: '1d' });
+
+    console.log('Admin login successful for:', admin.username);
+
+    return res.status(200).json({
+      success: true,
+      token,
+      admin: {
+        _id: admin._id,
+        username: admin.username
+      }
+    });
+  } catch (err) {
+    console.error('Error during admin password comparison:', err);
+    return res.status(500).json({ success: false, message: 'Server error' });
+  }
 });
 
 // Get all candidates
@@ -163,6 +174,9 @@ app.get('/getDashboardData', (req, res) => {
     }
   });
 });
+
+// Biometrics routes (Python verifier wrapper)
+app.use('/biometrics', require('./routes/biometricsRoutes'));
 
 // Default route
 app.get('/', (req, res) => {

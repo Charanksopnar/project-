@@ -1,21 +1,72 @@
 /**
  * ID Verification Module
  * 
- * This module handles verification of government-issued IDs like Aadhar, Voter ID, and Driving License.
- * It uses OCR and face matching to verify the authenticity of the ID and match it with the user.
+ * This module handles verification of government-issued IDs like Aadhar, Voter ID, PAN, and Driving License.
+ * Features:
+ * - OCR-based text extraction with preprocessing
+ * - Face detection and matching
+ * - ID type detection and validation
+ * - Personal information extraction
+ * - Multi-language support (English + Hindi)
  */
 
 const tesseract = require('node-tesseract-ocr');
 const faceRecognition = require('./faceRecognition');
 const fs = require('fs');
 const path = require('path');
+const { promisify } = require('util');
+const sharp = require('sharp');
 
 // Configuration for OCR
 const ocrConfig = {
-  lang: 'eng',
-  oem: 1,
-  psm: 3,
+  lang: 'eng+hin', // Support both English and Hindi
+  oem: 1, // Use LSTM OCR Engine
+  psm: 3, // Auto-page segmentation
+  dpi: 300, // Higher DPI for better accuracy
+  preprocess: true // Enable preprocessing
 };
+
+// Supported ID types and their validation patterns
+const ID_PATTERNS = {
+  aadhar: {
+    pattern: /[2-9]{1}[0-9]{3}[0-9]{4}[0-9]{4}/,
+    name: 'Aadhar Card',
+    required: ['name', 'dob', 'gender', 'number']
+  },
+  voter: {
+    pattern: /[A-Z]{3}[0-9]{7}/,
+    name: 'Voter ID',
+    required: ['name', 'father_name', 'number']
+  },
+  pan: {
+    pattern: /[A-Z]{5}[0-9]{4}[A-Z]{1}/,
+    name: 'PAN Card',
+    required: ['name', 'father_name', 'dob', 'number']
+  },
+  driving: {
+    pattern: /[A-Z]{2}[0-9]{13}/,
+    name: 'Driving License',
+    required: ['name', 'dob', 'number', 'validity']
+  }
+};
+
+/**
+ * Preprocess ID card image for better OCR accuracy
+ * @param {Buffer} imageBuffer - Original image buffer
+ * @returns {Promise<Buffer>} - Processed image buffer
+ */
+async function preprocessImage(imageBuffer) {
+  try {
+    return await sharp(imageBuffer)
+      .resize(1500, null, { withoutEnlargement: true }) // Resize to optimal width
+      .sharpen() // Enhance edges
+      .normalize() // Normalize contrast
+      .toBuffer();
+  } catch (error) {
+    console.error('Error preprocessing image:', error);
+    return imageBuffer; // Return original if processing fails
+  }
+}
 
 /**
  * Extract text from ID card image using OCR
@@ -24,20 +75,38 @@ const ocrConfig = {
  */
 async function extractTextFromID(idImageBuffer) {
   try {
-    // Save buffer to temporary file for OCR processing
-    const tempFilePath = path.join(__dirname, '../temp', `temp_id_${Date.now()}.jpg`);
-    fs.writeFileSync(tempFilePath, idImageBuffer);
+    // Create temp directory if it doesn't exist
+    const tempDir = path.join(__dirname, '../temp');
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+
+    // Preprocess image for better OCR
+    const processedBuffer = await preprocessImage(idImageBuffer);
     
-    // Perform OCR
-    const text = await tesseract.recognize(tempFilePath, ocrConfig);
+    // Save processed buffer to temporary file
+    const tempFilePath = path.join(tempDir, `temp_id_${Date.now()}.jpg`);
+    fs.writeFileSync(tempFilePath, processedBuffer);
     
-    // Clean up temporary file
-    fs.unlinkSync(tempFilePath);
-    
-    return {
-      success: true,
-      text: text
-    };
+    try {
+      // Perform OCR with enhanced config
+      const text = await tesseract.recognize(tempFilePath, {
+        ...ocrConfig,
+        preprocess: 'contrast', // Enhance contrast
+        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-/ ', // Limit characters
+      });
+      
+      return {
+        success: true,
+        text: text.trim(),
+        confidence: 100 // TODO: Get actual confidence from Tesseract
+      };
+    } finally {
+      // Clean up temporary file
+      if (fs.existsSync(tempFilePath)) {
+        fs.unlinkSync(tempFilePath);
+      }
+    }
   } catch (error) {
     console.error('Error extracting text from ID:', error);
     return {
@@ -218,11 +287,7 @@ async function matchFaceWithID(idImageBuffer, selfieBuffer) {
  * @param {string} aadharNumber - The Aadhar number to validate
  * @returns {boolean} - Whether the Aadhar number is valid
  */
-function validateAadharNumber(aadharNumber) {
-  // Simple validation for demo purposes
-  // In a real implementation, use the Verhoeff algorithm
-  return aadharNumber.length === 12 && /^\d+$/.test(aadharNumber);
-}
+function validateAadharNumber(aadharNumber) {\n    const d = [\n        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],\n        [1, 2, 3, 4, 0, 6, 7, 8, 9, 5],\n        [2, 3, 4, 0, 1, 7, 8, 9, 5, 6],\n        [3, 4, 0, 1, 2, 8, 9, 5, 6, 7],\n        [4, 0, 1, 2, 3, 9, 5, 6, 7, 8],\n        [5, 9, 8, 7, 6, 0, 4, 3, 2, 1],\n        [6, 5, 9, 8, 7, 1, 0, 4, 3, 2],\n        [7, 6, 5, 9, 8, 2, 1, 0, 4, 3],\n        [8, 7, 6, 5, 9, 3, 2, 1, 0, 4],\n        [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]\n    ];\n    const p = [\n        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],\n        [1, 5, 7, 6, 2, 8, 3, 0, 9, 4],\n        [5, 8, 0, 3, 7, 9, 6, 1, 4, 2],\n        [8, 9, 1, 6, 0, 4, 3, 5, 2, 7],\n        [9, 4, 5, 3, 1, 2, 6, 8, 7, 0],\n        [4, 2, 8, 6, 5, 7, 3, 9, 0, 1],\n        [2, 7, 9, 3, 8, 0, 6, 4, 1, 5],\n        [7, 0, 4, 6, 9, 1, 3, 2, 5, 8]\n    ];\n\n    if (aadharNumber.length !== 12 || !/^\d+$/.test(aadharNumber)) {\n        return false;\n    }\n\n    let c = 0;\n    const invertedAadhar = aadharNumber.split(\'\').reverse().map(Number);\n\n    for (let i = 0; i < invertedAadhar.length; i++) {\n        c = d[c][p[i % 8][invertedAadhar[i]]];\n    }\n\n    return c === 0;\n}
 
 module.exports = {
   verifyAadharCard,
