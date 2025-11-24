@@ -1,23 +1,22 @@
 const jwt = require('jsonwebtoken');
-const Voter = require('../models/Voter');
-const Admin = require('../models/Admin');
+const mockDb = require('../mockDb');
 
 // Middleware to authenticate voters
 exports.voterAuth = async (req, res, next) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
-    
+
     if (!token) {
       return res.status(401).json({ success: false, message: 'Authentication required' });
     }
-    
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const voter = await Voter.findById(decoded.id);
-    
+    const voter = mockDb.voters.find(v => v._id === decoded.id || v._id.toString() === decoded.id.toString());
+
     if (!voter) {
       return res.status(401).json({ success: false, message: 'Invalid authentication' });
     }
-    
+
     req.voter = voter;
     next();
   } catch (error) {
@@ -29,21 +28,23 @@ exports.voterAuth = async (req, res, next) => {
 exports.adminAuth = async (req, res, next) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
-    
+
     if (!token) {
       return res.status(401).json({ success: false, message: 'Authentication required' });
     }
-    
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const admin = await Admin.findById(decoded.id);
-    
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret_key');
+
+    const admin = mockDb.admins.find(a => a._id === decoded.id || a._id.toString() === decoded.id.toString());
+
     if (!admin) {
       return res.status(401).json({ success: false, message: 'Invalid authentication' });
     }
-    
+
     req.admin = admin;
     next();
   } catch (error) {
+    console.error('Auth error:', error);
     res.status(401).json({ success: false, message: 'Authentication failed' });
   }
 };

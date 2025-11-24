@@ -5,7 +5,6 @@ import {
   Button,
   Paper,
   Grid,
-  CircularProgress,
   Alert,
   Dialog,
   DialogTitle,
@@ -16,9 +15,11 @@ import {
 import { styled } from '@mui/material/styles';
 import axios from 'axios';
 import { BASE_URL } from '../../../../helper';
+// You can still use face-api.js & your utils later for pose/head-direction etc.
 import * as faceapi from 'face-api.js';
 import { browserCompatibility, checkBrowserCompatibility } from '../../../../utils/browserCompatibility';
-import { faceDetectionManager, detectFacesInVideo, processFaceDetectionHistory } from '../../../../utils/faceDetectionUtils';
+// NOTE: removed processFaceDetectionHistory from import to avoid name clash
+import { faceDetectionManager, detectFacesInVideo } from '../../../../utils/faceDetectionUtils';
 
 const MonitoringPaper = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(3),
@@ -70,20 +71,27 @@ const SecurityStatus = styled(Box)(({ status, theme }) => ({
   borderRadius: '5px',
   backgroundColor:
     status === 'secure' ? theme.palette.success.light :
-    status === 'warning' ? theme.palette.warning.light :
-    theme.palette.error.light,
+      status === 'warning' ? theme.palette.warning.light :
+        theme.palette.error.light,
   color:
     status === 'secure' ? theme.palette.success.dark :
-    status === 'warning' ? theme.palette.warning.dark :
-    theme.palette.error.dark,
+      status === 'warning' ? theme.palette.warning.dark :
+        theme.palette.error.dark,
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
   marginTop: theme.spacing(2)
 }));
 
-const SecureVotingSession = ({ onVotingComplete, candidateId, onSecurityViolation }) => {
-  // Refs for media elements
+const SecureVotingSession = ({
+  onVotingComplete,
+  candidateId,
+  onSecurityViolation,
+  voterId,
+  electionId,
+  onCancel
+}) => {
+  // Media refs
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const audioContextRef = useRef(null);
@@ -91,7 +99,24 @@ const SecureVotingSession = ({ onVotingComplete, candidateId, onSecurityViolatio
   const mediaRecorderRef = useRef(null);
   const streamRef = useRef(null);
 
-  // State variables
+  // Interval refs
+  const audioMonitoringRef = useRef(null);
+  const videoMonitoringRef = useRef(null);
+
+  // History refs (no globals on window)
+  const audioHistoryRef = useRef([]);
+  const videoHistoryRef = useRef({
+    faceCountHistory: [],
+    suspiciousPatterns: 0,
+    lastAnalysisTime: 0
+  });
+
+  // Warning counters: 2 warnings, 3rd = block for audio multiple voices
+  const warningCountersRef = useRef({
+    multipleVoices: 0
+  });
+
+  // State
   const [isInitializing, setIsInitializing] = useState(true);
   const [securityStatus, setSecurityStatus] = useState('initializing');
   const [securityMessage, setSecurityMessage] = useState('Initializing secure voting session...');
@@ -106,22 +131,16 @@ const SecureVotingSession = ({ onVotingComplete, candidateId, onSecurityViolatio
   const [compatibilityChecked, setCompatibilityChecked] = useState(false);
   const [compatibilityReport, setCompatibilityReport] = useState(null);
   const [retryAttempts, setRetryAttempts] = useState(0);
-
-  // State for face detection models
   const [modelsLoaded, setModelsLoaded] = useState(false);
 
-  // Monitoring intervals
-  const monitoringIntervalRef = useRef(null);
-  const audioMonitoringRef = useRef(null);
-
-  // Enhanced initialization with compatibility check
+  // ---- INITIAL PHASE: Browser + model check ----
   useEffect(() => {
     const initializeSession = async () => {
       try {
         setIsInitializing(true);
+        setSecurityStatus('initializing');
         setSecurityMessage('Checking browser compatibility...');
 
-        // Check browser compatibility first
         const { results, report } = await checkBrowserCompatibility();
         setCompatibilityReport(report);
         setCompatibilityChecked(true);
@@ -137,15 +156,20 @@ const SecureVotingSession = ({ onVotingComplete, candidateId, onSecurityViolatio
           console.warn('Compatibility warnings:', report.warnings);
         }
 
-        // Load face detection models using the utility
-        setSecurityMessage('Loading face detection models...');
-        await faceDetectionManager.loadModels(3);
+        setSecurityMessage('Loading face detection models (you can still vote if this fails)...');
 
-        setModelsLoaded(true);
-        console.log('Initialization completed successfully');
-
-      } catch (error) {
-        console.error('Error during initialization:', error);
+        try {
+          await faceDetectionManager.loadModels(2);
+          setModelsLoaded(true);
+          console.log('Face detection models loaded successfully');
+          setSecurityMessage('Face detection ready. Requesting camera and microphone access...');
+        } catch (err) {
+          console.warn('Face detection models failed to load, proceeding without advanced face analysis:', err);
+          setModelsLoaded(false);
+          setSecurityMessage('Advanced face detection unavailable. Basic video monitoring will be used.');
+        }
+      } catch (err) {
+        console.error('Error during initialization:', err);
         setError('Failed to initialize secure voting session. Please refresh the page and try again.');
         setShowErrorDialog(true);
         setIsInitializing(false);
@@ -155,72 +179,61 @@ const SecureVotingSession = ({ onVotingComplete, candidateId, onSecurityViolatio
     initializeSession();
   }, []);
 
-
-
-  // Initialize media streams and monitoring
+  // ---- SECOND PHASE: Camera + mic request ----
   useEffect(() => {
-    // Only proceed if models are loaded and compatibility is checked
-    if (!modelsLoaded || !compatibilityChecked) return;
+    if (!compatibilityChecked) return;
 
     const initializeMedia = async () => {
       try {
         setSecurityMessage('Requesting camera and microphone access...');
-
-        // Enhanced media constraints with fallback
         const constraints = await getOptimalMediaConstraints();
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
 
         streamRef.current = stream;
 
-        // Enhanced video setup
         if (videoRef.current) {
           await setupVideoElement(videoRef.current, stream);
         }
 
-        // Set up audio analysis with error handling
         await setupAudioAnalysis(stream);
-
-        // Set up media recording with error handling
         await setupMediaRecording(stream);
-
-        // Start monitoring
-        startMonitoring();
+        startMonitoring(); // audio + video monitoring
 
         setIsInitializing(false);
         setSecurityStatus('secure');
-        setSecurityMessage('Secure voting session established. Please maintain a clear view of your face.');
+        setSecurityMessage(
+          modelsLoaded
+            ? 'Secure voting session established. Please keep your face clearly visible.'
+            : 'Secure voting session established (advanced face detection disabled). Please keep your face clearly visible.'
+        );
 
-        // Start voting progress simulation
         startVotingProgress();
-
-      } catch (error) {
-        console.error('Error initializing media:', error);
-        handleMediaError(error);
+      } catch (err) {
+        console.error('Error initializing media:', err);
+        handleMediaError(err);
       }
     };
 
     initializeMedia();
 
-    // Cleanup function
+    // Cleanup on unmount
     return () => {
       cleanupMediaResources();
     };
-  }, [modelsLoaded, compatibilityChecked]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [compatibilityChecked]);
 
-  // Enhanced cleanup function
+  // ---- Helper: Cleanup media & intervals ----
   const cleanupMediaResources = () => {
-    // Clear monitoring intervals
-    if (monitoringIntervalRef.current) {
-      clearInterval(monitoringIntervalRef.current);
-      monitoringIntervalRef.current = null;
-    }
-
     if (audioMonitoringRef.current) {
       clearInterval(audioMonitoringRef.current);
       audioMonitoringRef.current = null;
     }
+    if (videoMonitoringRef.current) {
+      clearInterval(videoMonitoringRef.current);
+      videoMonitoringRef.current = null;
+    }
 
-    // Stop media tracks
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => {
         track.stop();
@@ -229,26 +242,23 @@ const SecureVotingSession = ({ onVotingComplete, candidateId, onSecurityViolatio
       streamRef.current = null;
     }
 
-    // Close audio context
     if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
       audioContextRef.current.close();
       audioContextRef.current = null;
     }
 
-    // Stop media recorder
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
       mediaRecorderRef.current = null;
     }
 
-    // Clear video element
     if (videoRef.current) {
       videoRef.current.srcObject = null;
       videoRef.current.load();
     }
   };
 
-  // Get optimal media constraints based on device capabilities
+  // ---- Helper: constraints with fallbacks ----
   const getOptimalMediaConstraints = async () => {
     const baseConstraints = {
       video: {
@@ -264,27 +274,29 @@ const SecureVotingSession = ({ onVotingComplete, candidateId, onSecurityViolatio
       }
     };
 
-    // Fallback constraints for compatibility
-    if (retryAttempts > 0) {
+    if (retryAttempts === 1) {
       return {
-        video: {
-          width: { ideal: 320 },
-          height: { ideal: 240 }
-        },
+        video: { width: { ideal: 320 }, height: { ideal: 240 } },
         audio: true
+      };
+    }
+
+    if (retryAttempts >= 2) {
+      return {
+        video: { width: { ideal: 320 }, height: { ideal: 240 } },
+        audio: false
       };
     }
 
     return baseConstraints;
   };
 
-  // Enhanced video element setup
+  // ---- Video setup ----
   const setupVideoElement = (videoElement, stream) => {
     return new Promise((resolve, reject) => {
       videoElement.srcObject = stream;
 
       videoElement.onloadedmetadata = () => {
-        console.log('Video metadata loaded');
         videoElement.play()
           .then(() => {
             console.log('Video playing successfully');
@@ -293,20 +305,25 @@ const SecureVotingSession = ({ onVotingComplete, candidateId, onSecurityViolatio
           .catch(reject);
       };
 
-      videoElement.onerror = (error) => {
-        console.error('Video element error:', error);
+      videoElement.onerror = (err) => {
+        console.error('Video element error:', err);
         reject(new Error('Failed to load video'));
       };
 
-      // Set video attributes
       videoElement.autoplay = true;
       videoElement.playsInline = true;
       videoElement.muted = true;
     });
   };
 
-  // Enhanced audio analysis setup
+  // ---- Audio analysis ----
   const setupAudioAnalysis = async (stream) => {
+    if (stream.getAudioTracks().length === 0) {
+      console.warn('No audio tracks available. Audio monitoring disabled.');
+      setSecurityMessage(prev => prev + ' (Audio monitoring disabled)');
+      return;
+    }
+
     try {
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
       audioContextRef.current = audioContext;
@@ -319,13 +336,13 @@ const SecureVotingSession = ({ onVotingComplete, candidateId, onSecurityViolatio
       source.connect(analyser);
 
       console.log('Audio analysis setup completed');
-    } catch (error) {
-      console.error('Error setting up audio analysis:', error);
-      throw new Error('Failed to setup audio monitoring');
+    } catch (err) {
+      console.error('Error setting up audio analysis:', err);
+      setSecurityMessage(prev => prev + ' (Audio monitoring failed)');
     }
   };
 
-  // Enhanced media recording setup
+  // ---- Media recording ----
   const setupMediaRecording = async (stream) => {
     try {
       const mediaRecorder = new MediaRecorder(stream, {
@@ -336,173 +353,247 @@ const SecureVotingSession = ({ onVotingComplete, candidateId, onSecurityViolatio
 
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
-          setRecordedChunks((prev) => [...prev, event.data]);
+          setRecordedChunks(prev => [...prev, event.data]);
         }
       };
 
-      mediaRecorder.onerror = (error) => {
-        console.error('MediaRecorder error:', error);
+      mediaRecorder.onerror = (err) => {
+        console.error('MediaRecorder error:', err);
         setSecurityStatus('warning');
         setSecurityMessage('Recording error detected. Session integrity may be compromised.');
       };
 
-      mediaRecorder.start(1000); // Collect data every second
+      mediaRecorder.start(1000);
       console.log('Media recording setup completed');
-    } catch (error) {
-      console.error('Error setting up media recording:', error);
+    } catch (err) {
+      console.error('Error setting up media recording:', err);
       throw new Error('Failed to setup session recording');
     }
   };
 
-  // Enhanced error handling for media initialization
-  const handleMediaError = (error) => {
-    const errorMessage = browserCompatibility.getCameraErrorMessage(error);
+  // ---- Browser-specific instructions ----
+  const getBrowserSpecificInstructions = () => {
+    const userAgent = navigator.userAgent.toLowerCase();
+
+    if (userAgent.includes('chrome') && !userAgent.includes('edg')) {
+      return '📌 Chrome: Click the camera icon in the address bar, then select "Allow" for camera and microphone.';
+    } else if (userAgent.includes('firefox')) {
+      return '📌 Firefox: Click the camera icon in the address bar, then select "Allow" for camera and microphone.';
+    } else if (userAgent.includes('edg')) {
+      return '📌 Edge: Click the camera icon in the address bar, then select "Allow" for camera and microphone.';
+    } else if (userAgent.includes('safari')) {
+      return '📌 Safari: Go to Safari > Settings > Websites > Camera/Microphone, then allow access for this site.';
+    }
+
+    return '📌 Please check your browser settings to allow camera and microphone access for this website.';
+  };
+
+  // ---- Media error + retries ----
+  const handleMediaError = (err) => {
+    let errorMessage = browserCompatibility.getCameraErrorMessage(err);
+    const browserInstructions = getBrowserSpecificInstructions();
+    if (browserInstructions) {
+      errorMessage += '\n\n' + browserInstructions;
+    }
+
     setError(errorMessage);
     setShowErrorDialog(true);
     setIsInitializing(false);
 
-    // Offer retry with basic constraints for certain errors
-    if (error.name === 'OverconstrainedError' && retryAttempts < 2) {
-      console.log('Retrying with basic constraints...');
+    if (retryAttempts < 3) {
+      console.log(`Retrying initialization (attempt ${retryAttempts + 1})...`);
       setRetryAttempts(prev => prev + 1);
-      setSecurityMessage('Retrying with basic settings...');
+      setSecurityMessage('Retrying with adjusted settings...');
+
       setTimeout(() => {
         setIsInitializing(true);
-        // This will trigger the useEffect again
-      }, 2000);
+        setShowErrorDialog(false);
+        setError(null);
+        // trigger media re-init by toggling compatibility flag
+        setCompatibilityChecked(false);
+        setTimeout(() => setCompatibilityChecked(true), 50);
+      }, 1500);
+    } else {
+      console.warn('All media attempts failed. Falling back to simulation mode.');
+      setSecurityMessage('Camera access failed. Proceeding in simulation mode (your vote may be reviewed).');
+      setShowErrorDialog(false);
+      setIsInitializing(false);
+      setSecurityStatus('warning');
+      startVotingProgress();
     }
   };
 
-  // Function to start monitoring audio and video
+  const handleRetryPermissions = () => {
+    setShowErrorDialog(false);
+    setError(null);
+    setIsInitializing(true);
+    setSecurityMessage('Requesting camera and microphone access...');
+    setRetryAttempts(0);
+    cleanupMediaResources();
+    setCompatibilityChecked(false);
+    setTimeout(() => setCompatibilityChecked(true), 50);
+  };
+
+  const handleCancelSession = () => {
+    cleanupMediaResources();
+    if (onCancel) onCancel();
+  };
+
+  // ---- Monitoring (audio + video) ----
   const startMonitoring = () => {
-    // Monitor audio levels and patterns
-    const audioMonitoringInterval = setInterval(() => {
-      if (analyserRef.current) {
-        const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
-        analyserRef.current.getByteFrequencyData(dataArray);
+    // clear previous intervals if any
+    if (audioMonitoringRef.current) clearInterval(audioMonitoringRef.current);
+    if (videoMonitoringRef.current) clearInterval(videoMonitoringRef.current);
 
-        // Calculate average volume level
-        const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
-        const normalizedLevel = Math.min(100, Math.max(0, average * 100 / 256));
-        setAudioLevel(normalizedLevel);
+    // AUDIO
+    audioMonitoringRef.current = setInterval(() => {
+      if (!analyserRef.current) return;
 
-        // Store historical audio data for pattern analysis
-        const audioHistory = window.audioHistory || [];
-        if (audioHistory.length > 20) {
-          audioHistory.shift(); // Remove oldest data point
+      const analyser = analyserRef.current;
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      analyser.getByteFrequencyData(dataArray);
+
+      const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
+      const normalizedLevel = Math.min(100, Math.max(0, (average * 100) / 256));
+      setAudioLevel(normalizedLevel);
+
+      // maintain history
+      const history = audioHistoryRef.current;
+      if (history.length > 20) history.shift();
+      history.push(normalizedLevel);
+
+      if (history.length >= 10) {
+        const mean = history.reduce((sum, val) => sum + val, 0) / history.length;
+        const variance = history.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / history.length;
+
+        let transitions = 0;
+        for (let i = 1; i < history.length; i++) {
+          const diff = Math.abs(history[i] - history[i - 1]);
+          if (diff > 20) transitions++;
         }
-        audioHistory.push(normalizedLevel);
-        window.audioHistory = audioHistory;
 
-        // Analyze audio patterns for multiple voices
-        if (audioHistory.length >= 10) {
-          // Calculate variance in audio levels (high variance can indicate multiple speakers)
-          const mean = audioHistory.reduce((sum, val) => sum + val, 0) / audioHistory.length;
-          const variance = audioHistory.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / audioHistory.length;
-
-          // Count rapid transitions in audio levels (can indicate speaker changes)
-          let transitions = 0;
-          for (let i = 1; i < audioHistory.length; i++) {
-            const diff = Math.abs(audioHistory[i] - audioHistory[i-1]);
-            if (diff > 20) { // Threshold for significant change
-              transitions++;
-            }
-          }
-
-          // Detect potential multiple voices
-          if (variance > 300 || transitions > 3) {
-            // Severe audio pattern anomalies indicate multiple people - treat as violation
-            handleSecurityViolation(
-              'Multiple voices detected. Voting session will be terminated.',
-              'multiple_voices'
-            );
-          } else if (normalizedLevel > 70) {
-            // High audio levels are just a warning
-            handleSecurityWarning('High audio levels detected. Please ensure you are alone while voting.');
-          }
+        // Advanced workflow: 2 warnings, 3rd = block for multiple voices
+        if (variance > 300 || transitions > 3) {
+          registerWarningOrBlock(
+            'multipleVoices',
+            'Multiple voices detected. Please ensure you are alone while voting.'
+          );
+        } else if (normalizedLevel > 70) {
+          handleSecurityWarning('High audio levels detected. Please keep background noise low.');
         }
       }
     }, 100);
 
-    // Monitor video for face detection
-    const videoMonitoringInterval = setInterval(async () => {
-      if (videoRef.current && canvasRef.current && videoRef.current.readyState === 4) {
-        const context = canvasRef.current.getContext('2d');
-        canvasRef.current.width = videoRef.current.videoWidth;
-        canvasRef.current.height = videoRef.current.videoHeight;
+    // VIDEO
+    videoMonitoringRef.current = setInterval(async () => {
+      if (!videoRef.current || !canvasRef.current || videoRef.current.readyState !== 4) return;
 
-        // Save the current context state
-        context.save();
+      const canvas = canvasRef.current;
+      const context = canvas.getContext('2d');
+      canvas.width = videoRef.current.videoWidth;
+      canvas.height = videoRef.current.videoHeight;
 
-        // Mirror the canvas context horizontally to match the mirrored video display
-        context.translate(canvasRef.current.width, 0);
-        context.scale(-1, 1);
+      context.save();
+      context.translate(canvas.width, 0);
+      context.scale(-1, 1);
+      context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+      context.restore();
 
-        // Draw the mirrored video
-        context.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
+      // OPTIONAL: if you want local face detection (liveness, pose) using face-api:
+      // if (modelsLoaded) {
+      //   const detections = await detectFacesInVideo(videoRef.current);
+      //   const faceCount = detections.length;
+      //   const analysis = analyzeFaceDetectionHistory(faceCount);
+      //   setFaceDetected(analysis.faceDetected);
+      //   setMultipleFaces(analysis.multipleFaces);
+      //   setFraudDetected(analysis.fraudDetected);
+      // }
 
-        // Restore the context to its original state
-        context.restore();
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+
+        const formData = new FormData();
+        formData.append('frame', blob, 'frame.jpg');
+        formData.append('voterId', voterId);
+        formData.append('electionId', electionId);
 
         try {
-          // Simplified face detection for now
-          // TODO: Implement full face detection later
-          setFaceDetected(true);
-          setMultipleFaces(false);
-          setFraudDetected(false);
-        } catch (error) {
-          console.error('Error during face detection:', error);
-        }
-      }
-    }, 500);
+          const response = await axios.post(
+            `${BASE_URL}/security/voting-session-check`,
+            formData
+          );
 
-    // Cleanup intervals on component unmount
-    return () => {
-      clearInterval(audioMonitoringInterval);
-      clearInterval(videoMonitoringInterval);
-    };
+          const { success, violation, violationType, message, isBlocked } = response.data;
+
+          if (!success) return;
+
+          if (isBlocked) {
+            handleSecurityViolation(
+              'You have been blocked from voting due to repeated violations.',
+              'BLOCKED'
+            );
+            if (onSecurityViolation) onSecurityViolation('BLOCKED', { isBlocked: true });
+            return;
+          }
+
+          if (violation) {
+            setSecurityStatus('violation');
+            setSecurityMessage(message || 'Security violation detected.');
+            if (violationType === 'MULTIPLE_FACES') {
+              setMultipleFaces(true);
+            } else if (violationType === 'FACE_MISMATCH') {
+              setFraudDetected(true);
+            }
+
+            // Parent can log / notify admin
+            if (onSecurityViolation) {
+              onSecurityViolation(message, {
+                violationType,
+                violationDetails: message,
+                evidenceData: JSON.stringify({
+                  timestamp: new Date().toISOString(),
+                  audioLevel,
+                  violationType
+                })
+              });
+            }
+          } else {
+            setSecurityStatus('secure');
+            setSecurityMessage('Secure voting session active.');
+            setMultipleFaces(false);
+            setFraudDetected(false);
+            setFaceDetected(true);
+          }
+        } catch (err) {
+          console.error('Security check error:', err);
+          // do not spam user with errors here; backend can be slightly flaky
+        }
+      }, 'image/jpeg', 0.7);
+    }, 2000);
   };
 
-  // Process face detection history for fraud analysis
-  const processFaceDetectionHistory = (faceDetected, multipleFaces, faceCount) => {
-    // Initialize video frame history if it doesn't exist
-    window.videoFrameHistory = window.videoFrameHistory || {
-      frames: [],
-      faceCountHistory: [],
-      suspiciousPatterns: 0,
-      lastAnalysisTime: 0
-    };
-
-    const history = window.videoFrameHistory;
-
-    // Add to detection history
+  // ---- Local fraud analysis based on face count history (optional) ----
+  const analyzeFaceDetectionHistory = (faceCount) => {
+    const history = videoHistoryRef.current;
     const now = Date.now();
-    history.faceCountHistory.push({
-      timestamp: now,
-      faceCount: faceCount
-    });
 
-    // Limit history size
+    history.faceCountHistory.push({ timestamp: now, faceCount });
     if (history.faceCountHistory.length > 30) {
       history.faceCountHistory.shift();
     }
 
-    // Analyze for fraud patterns every 3 seconds
-    let fraudDetected = false;
+    let fraud = history.suspiciousPatterns >= 3;
+
     if (now - history.lastAnalysisTime > 3000 && history.faceCountHistory.length >= 5) {
       history.lastAnalysisTime = now;
 
-      // Check for suspicious patterns
-
-      // Pattern 1: Rapid changes in face count
       let faceCountChanges = 0;
       for (let i = 1; i < history.faceCountHistory.length; i++) {
-        if (history.faceCountHistory[i].faceCount !== history.faceCountHistory[i-1].faceCount) {
+        if (history.faceCountHistory[i].faceCount !== history.faceCountHistory[i - 1].faceCount) {
           faceCountChanges++;
         }
       }
 
-      // Pattern 2: Periodic disappearance of faces
       let periodicDisappearances = 0;
       let noFaceCount = 0;
       for (let i = 0; i < history.faceCountHistory.length; i++) {
@@ -514,67 +605,72 @@ const SecureVotingSession = ({ onVotingComplete, candidateId, onSecurityViolatio
         }
       }
 
-      // Calculate suspicion score
       const rapidChangeThreshold = history.faceCountHistory.length * 0.3;
       const suspiciousScore =
         (faceCountChanges > rapidChangeThreshold ? 1 : 0) +
         (periodicDisappearances >= 2 ? 1 : 0);
 
-      // Update suspicious pattern count
       if (suspiciousScore >= 1) {
         history.suspiciousPatterns++;
       } else {
         history.suspiciousPatterns = Math.max(0, history.suspiciousPatterns - 0.5);
       }
 
-      // Determine if fraud is detected
-      fraudDetected = history.suspiciousPatterns >= 3;
-    } else {
-      // Use existing fraud detection status
-      fraudDetected = history.suspiciousPatterns >= 3;
+      fraud = history.suspiciousPatterns >= 3;
     }
 
     return {
-      faceDetected,
-      multipleFaces,
-      faceCount,
-      fraudDetected
+      faceDetected: faceCount > 0,
+      multipleFaces: faceCount > 1,
+      fraudDetected: fraud
     };
   };
 
-  // Handle security warnings
+  // ---- Warning escalation: 2 warnings then block ----
+  const registerWarningOrBlock = (type, baseMessage) => {
+    const counters = warningCountersRef.current;
+    counters[type] = (counters[type] || 0) + 1;
+    const count = counters[type];
+
+    if (count <= 2) {
+      handleSecurityWarning(`${baseMessage} (Warning ${count} of 2).`);
+    } else {
+      handleSecurityViolation(
+        `${baseMessage} You have violated the rule multiple times and are now blocked from this voting session.`,
+        type
+      );
+    }
+  };
+
   const handleSecurityWarning = (message) => {
     setSecurityStatus('warning');
     setSecurityMessage(message);
   };
 
-  // Handle security violations
   const handleSecurityViolation = (message, violationType = 'other') => {
     setSecurityStatus('violation');
     setSecurityMessage(message);
     setShowErrorDialog(true);
     setError(message);
 
-    // Create evidence data (in a real implementation, this would include snapshots, audio clips, etc.)
     const evidenceData = {
       timestamp: new Date().toISOString(),
-      faceDetected: faceDetected,
-      multipleFaces: multipleFaces,
-      fraudDetected: fraudDetected,
-      audioLevel: audioLevel
+      faceDetected,
+      multipleFaces,
+      fraudDetected,
+      audioLevel
     };
 
-    // Notify parent component with violation details
     if (onSecurityViolation) {
       onSecurityViolation(message, {
-        violationType: violationType,
+        violationType,
         violationDetails: message,
         evidenceData: JSON.stringify(evidenceData)
       });
     }
   };
 
-  // Simulate voting progress
+  // ---- Voting progress ----
   const startVotingProgress = () => {
     let progress = 0;
     const interval = setInterval(() => {
@@ -588,54 +684,49 @@ const SecureVotingSession = ({ onVotingComplete, candidateId, onSecurityViolatio
     }, 500);
   };
 
-  // Handle voting completion
   const handleVotingComplete = async () => {
     try {
-      // Stop recording
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
         mediaRecorderRef.current.stop();
       }
 
-      // Create a blob from recorded chunks
-      const blob = new Blob(recordedChunks, { type: 'video/webm' });
+      if (recordedChunks.length > 0) {
+        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        // TODO: upload blob to server as session evidence if required
+      }
 
-      // In a real implementation, you would upload this blob to the server
-      // For this demo, we'll simulate a successful vote
-
-      // Check if there were any security violations before completing the vote
       if (securityStatus === 'violation') {
-        // If there was a security violation, notify parent component with the violation
         if (onSecurityViolation) {
           onSecurityViolation(securityMessage, {
             violationType: 'security_violation',
             violationDetails: securityMessage,
             evidenceData: JSON.stringify({
               timestamp: new Date().toISOString(),
-              faceDetected: faceDetected,
-              multipleFaces: multipleFaces,
-              fraudDetected: fraudDetected,
-              audioLevel: audioLevel
+              faceDetected,
+              multipleFaces,
+              fraudDetected,
+              audioLevel
             })
           });
         }
-      } else {
-        // Only complete the vote if there were no security violations
-        if (onVotingComplete) {
-          onVotingComplete(candidateId);
-        }
+      } else if (onVotingComplete) {
+        onVotingComplete(candidateId);
       }
-    } catch (error) {
-      console.error('Error completing vote:', error);
+    } catch (err) {
+      console.error('Error completing vote:', err);
       setError('Failed to complete voting process. Please try again.');
       setShowErrorDialog(true);
     }
   };
 
-  // Handle dialog close
   const handleCloseErrorDialog = () => {
     setShowErrorDialog(false);
+    if (error) {
+      handleCancelSession();
+    }
   };
 
+  // ---- RENDER ----
   return (
     <Box sx={{ maxWidth: 800, mx: 'auto', my: 4 }}>
       <Typography variant="h4" gutterBottom align="center" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
@@ -660,12 +751,7 @@ const SecureVotingSession = ({ onVotingComplete, candidateId, onSecurityViolatio
             </Typography>
 
             <VideoContainer>
-              <VideoPreview
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-              />
+              <VideoPreview ref={videoRef} autoPlay playsInline muted />
               <canvas
                 ref={canvasRef}
                 style={{
@@ -675,7 +761,7 @@ const SecureVotingSession = ({ onVotingComplete, candidateId, onSecurityViolatio
                   width: '100%',
                   height: '100%',
                   zIndex: 10,
-                  pointerEvents: 'none' // Allow clicks to pass through
+                  pointerEvents: 'none'
                 }}
               />
             </VideoContainer>
@@ -684,17 +770,20 @@ const SecureVotingSession = ({ onVotingComplete, candidateId, onSecurityViolatio
               <Typography variant="body2" sx={{ mb: 1, mr: 2 }}>
                 Face Detected: {faceDetected ? 'Yes' : 'No'}
               </Typography>
-              <Typography variant="body2" color={multipleFaces ? 'error' : 'inherit'} sx={{ mb: 1 }}>
+              <Typography
+                variant="body2"
+                color={multipleFaces ? 'error' : 'inherit'}
+                sx={{ mb: 1 }}
+              >
                 Multiple Faces: {multipleFaces ? 'Yes (Violation)' : 'No'}
               </Typography>
-              <Typography variant="body2" color={fraudDetected ? 'error' : 'inherit'} sx={{ width: '100%' }}>
+              <Typography
+                variant="body2"
+                color={fraudDetected ? 'error' : 'inherit'}
+                sx={{ width: '100%' }}
+              >
                 Fraud Detection: {fraudDetected ? 'Suspicious Activity Detected' : 'No Suspicious Activity'}
               </Typography>
-              {!modelsLoaded && (
-                <Typography variant="body2" color="warning.main" sx={{ width: '100%', mt: 1 }}>
-                  Face detection models are loading...
-                </Typography>
-              )}
               {isInitializing && (
                 <Typography variant="body2" color="info.main" sx={{ width: '100%', mt: 1 }}>
                   Initializing security features...
@@ -727,8 +816,13 @@ const SecureVotingSession = ({ onVotingComplete, candidateId, onSecurityViolatio
 
           <SecurityStatus status={securityStatus}>
             <Typography variant="body2" fontWeight="bold">
-              {securityStatus === 'secure' ? 'SECURE' :
-               securityStatus === 'warning' ? 'WARNING' : 'VIOLATION'}
+              {securityStatus === 'secure'
+                ? 'SECURE'
+                : securityStatus === 'warning'
+                  ? 'WARNING'
+                  : securityStatus === 'initializing'
+                    ? 'INITIALIZING'
+                    : 'VIOLATION'}
             </Typography>
           </SecurityStatus>
 
@@ -739,8 +833,13 @@ const SecureVotingSession = ({ onVotingComplete, candidateId, onSecurityViolatio
             <LinearProgress
               variant="determinate"
               value={votingProgress}
-              color={securityStatus === 'secure' ? 'primary' :
-                    securityStatus === 'warning' ? 'warning' : 'error'}
+              color={
+                securityStatus === 'secure'
+                  ? 'primary'
+                  : securityStatus === 'warning'
+                    ? 'warning'
+                    : 'error'
+              }
             />
             <Typography variant="body2" align="center" sx={{ mt: 1 }}>
               {votingProgress}%
@@ -761,18 +860,48 @@ const SecureVotingSession = ({ onVotingComplete, candidateId, onSecurityViolatio
       <Dialog
         open={showErrorDialog}
         onClose={handleCloseErrorDialog}
+        maxWidth="sm"
+        fullWidth
       >
-        <DialogTitle>
-          Security Alert
+        <DialogTitle sx={{ bgcolor: 'error.light', color: 'error.contrastText' }}>
+          ⚠️ Camera/Microphone Access Required
         </DialogTitle>
-        <DialogContent>
-          <Typography>
+        <DialogContent sx={{ mt: 2 }}>
+          <Typography variant="body1" paragraph sx={{ whiteSpace: 'pre-line' }}>
             {error}
           </Typography>
+
+          <Alert severity="info" sx={{ mt: 2 }}>
+            <Typography variant="body2" fontWeight="bold" gutterBottom>
+              Why do we need camera and microphone access?
+            </Typography>
+            <Typography variant="body2">
+              • Verify your identity during voting
+              • Detect multiple people or suspicious activity
+              • Ensure voting integrity and security
+            </Typography>
+          </Alert>
+
+          <Typography variant="body2" sx={{ mt: 2, color: 'text.secondary' }}>
+            Your privacy is important. Video and audio are only monitored during the voting session
+            and are used solely for security purposes.
+          </Typography>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseErrorDialog}>
-            Close
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          <Button
+            onClick={handleCancelSession}
+            variant="outlined"
+            color="inherit"
+          >
+            Cancel Voting
+          </Button>
+          <Button
+            onClick={handleRetryPermissions}
+            variant="contained"
+            color="primary"
+            autoFocus
+          >
+            Retry Permissions
           </Button>
         </DialogActions>
       </Dialog>

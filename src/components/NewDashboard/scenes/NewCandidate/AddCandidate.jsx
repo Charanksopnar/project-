@@ -61,22 +61,6 @@ const AddCandidate = () => {
             // Append files if they exist
             if (candidateImage) {
                 formData.append('image', candidateImage);
-            }
-
-            if (partySymbol) {
-                formData.append('symbol', partySymbol);
-            }
-
-            const response = await axios.post(`${BASE_URL}/createCandidate`, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
-            });
-
-            if (response.data.success) {
-                CreationSuccess();
-                resetForm();
-                setCandidateImage(null);
                 setPartySymbol(null);
                 setTimeout(() => {
                     navigate('/Candidate');
@@ -106,7 +90,7 @@ const AddCandidate = () => {
                 <Sidebar />
                 <main className="content">
                     <Topbar />
-                    <ToastContainer/>
+                    <ToastContainer />
                     <Box m="0px 20px">
                         <Header title="CREATE NEW CANDIDATE" subtitle="Create a New Candidate Profile" />
                         <br></br>

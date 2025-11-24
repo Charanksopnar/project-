@@ -24,11 +24,7 @@ export const useVerification = () => {
 
       console.log('Verifying ID...');
 
-      const response = await axios.post(`${BASE_URL}/verify-voter-step`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+      const response = await axios.post(`${BASE_URL}/verify-voter-step`, formData);
 
       if (response.data.success) {
         setStepResults(prev => ({ ...prev, id: response.data }));
@@ -65,11 +61,7 @@ export const useVerification = () => {
 
       console.log('Verifying video frame...');
 
-      const response = await axios.post(`${BASE_URL}/verify-voter-step`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+      const response = await axios.post(`${BASE_URL}/verify-voter-step`, formData);
 
       if (response.data.success) {
         console.log('✅ Video verification successful:', response.data);

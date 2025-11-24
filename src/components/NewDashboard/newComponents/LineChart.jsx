@@ -1,11 +1,43 @@
 import { ResponsiveLine } from "@nivo/line";
 import { useTheme } from "@mui/material";
 import { tokens } from "../theme";
-import { mockLineData as data } from "../data/mockData";
+import { mockLineData } from "../data/mockData";
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import { BASE_URL } from "../../../helper";
 
-const LineChart = ({ isCustomLineColors = false, isDashboard = false }) => {
+const LineChart = ({ isCustomLineColors = false, isDashboard = false, electionId }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+  const [data, setData] = useState(mockLineData);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (electionId) {
+        try {
+          const response = await axios.get(`${BASE_URL}/getElectionResults/${electionId}`);
+          if (response.data.success && response.data.election && response.data.election.candidates) {
+            const chartData = [
+              {
+                id: "Votes",
+                color: colors.greenAccent[500],
+                data: response.data.election.candidates.map(c => ({
+                  x: c.party,
+                  y: c.votes
+                }))
+              }
+            ];
+            setData(chartData);
+          }
+        } catch (error) {
+          console.error("Error fetching election results:", error);
+        }
+      } else {
+        setData(mockLineData);
+      }
+    };
+    fetchData();
+  }, [electionId]);
 
   return (
     <ResponsiveLine
@@ -43,7 +75,7 @@ const LineChart = ({ isCustomLineColors = false, isDashboard = false }) => {
           },
         },
       }}
-      colors={isDashboard ? { datum: "color" } : { scheme: "nivo" }} // added
+      colors={isDashboard ? { datum: "color" } : { scheme: "nivo" }}
       margin={{ top: 50, right: 110, bottom: 50, left: 60 }}
       xScale={{ type: "point" }}
       yScale={{
@@ -62,17 +94,17 @@ const LineChart = ({ isCustomLineColors = false, isDashboard = false }) => {
         tickSize: 0,
         tickPadding: 5,
         tickRotation: 0,
-        legend: isDashboard ? undefined : "transportation", // added
+        legend: isDashboard ? undefined : (electionId ? "Party" : "transportation"),
         legendOffset: 36,
         legendPosition: "middle",
       }}
       axisLeft={{
         orient: "left",
-        tickValues: 5, // added
+        tickValues: 5,
         tickSize: 3,
         tickPadding: 5,
         tickRotation: 0,
-        legend: isDashboard ? undefined : "count", // added
+        legend: isDashboard ? undefined : "count",
         legendOffset: -40,
         legendPosition: "middle",
       }}

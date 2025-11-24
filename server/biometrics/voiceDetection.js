@@ -5,10 +5,24 @@
  * people are speaking during the voting process, which could indicate coercion.
  */
 
-const tf = require('@tensorflow/tfjs-node');
+let tf, wav;
+try {
+  tf = require('@tensorflow/tfjs-node');
+} catch (error) {
+  console.warn('TensorFlow.js not available. Voice detection features will be limited.');
+  tf = null;
+}
+
+try {
+  wav = require('node-wav');
+} catch (error) {
+  console.warn('node-wav not available. Voice detection features will be limited.');
+  wav = null;
+}
+
 const fs = require('fs');
 const path = require('path');
-const wav = require('node-wav');
+
 
 // Path to pre-trained voice models
 const VOICE_MODELS_PATH = path.join(__dirname, '../models/voice');
@@ -41,6 +55,10 @@ async function loadVoiceModels() {
  */
 function processAudioData(audioBuffer) {
   try {
+    if (!wav) {
+      throw new Error('node-wav module not available');
+    }
+
     // Decode WAV data
     const wavData = wav.decode(audioBuffer);
 

@@ -1,1 +1,69 @@
-[]
+[
+  {
+    "_id": "1",
+    "title": "Presidential Election 2025",
+    "description": "National election for the next president.",
+    "startDate": "2025-11-27T14:52:48.594Z",
+    "endDate": "2025-12-04T14:52:48.594Z",
+    "status": "current",
+    "candidates": [
+      "1",
+      "2",
+      "3",
+      "4"
+    ]
+  },
+  {
+    "_id": "2",
+    "title": "State Assembly Election 2025",
+    "description": "Election for state assembly representatives.",
+    "startDate": "2025-12-15T08:00:00.000Z",
+    "endDate": "2025-12-22T18:00:00.000Z",
+    "status": "upcoming",
+    "candidates": [
+      "1",
+      "2",
+      "3"
+    ]
+  },
+  {
+    "_id": "3",
+    "title": "Local Municipal Election 2024",
+    "description": "Municipal corporation election for local governance.",
+    "startDate": "2024-10-01T08:00:00.000Z",
+    "endDate": "2024-10-15T18:00:00.000Z",
+    "status": "completed",
+    "candidates": [
+      "1",
+      "2",
+      "3",
+      "4"
+    ]
+  },
+  {
+    "_id": "4",
+    "title": "General Election 2025 - Second Phase",
+    "description": "Second phase of the general election across multiple constituencies.",
+    "startDate": "2025-12-25T09:00:00.000Z",
+    "endDate": "2026-01-05T18:00:00.000Z",
+    "status": "upcoming",
+    "candidates": [
+      "2",
+      "3",
+      "4"
+    ]
+  },
+  {
+    "_id": "5",
+    "title": "Regional Council Elections 2024",
+    "description": "Election for regional council members.",
+    "startDate": "2024-09-01T08:00:00.000Z",
+    "endDate": "2024-09-30T18:00:00.000Z",
+    "status": "completed",
+    "candidates": [
+      "1",
+      "2",
+      "3"
+    ]
+  }
+]

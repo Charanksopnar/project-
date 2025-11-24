@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Button,
@@ -8,6 +8,7 @@ import {
   CircularProgress,
   LinearProgress
 } from '@mui/material';
+import InlineCameraDiagnostic from './InlineCameraDiagnostic';
 import { styled } from '@mui/material/styles';
 
 const VerificationPaper = styled(Paper)(({ theme }) => ({
@@ -185,7 +186,26 @@ const VideoVerificationStep = ({
   mlServiceStatus,
   isProcessingML
 }) => {
+  const [diagOpen, setDiagOpen] = useState(false);
+  // Ensure video element is visible when camera becomes active
+  useEffect(() => {
+    if (cameraActive && videoRef.current) {
+      const video = videoRef.current;
+      video.style.visibility = 'visible';
+      video.style.opacity = '1';
+      video.style.display = 'block';
+      
+      // Force play if not already playing
+      if (video.paused && video.readyState >= 2) {
+        video.play().catch(err => {
+          console.warn('Auto-play prevented, user interaction required:', err);
+        });
+      }
+    }
+  }, [cameraActive, videoRef]);
+
   return (
+    <>
     <VerificationPaper>
       <Typography variant="h6" gutterBottom>
         Live Video Verification
@@ -231,24 +251,59 @@ const VideoVerificationStep = ({
               </Button>
               <Button
                 variant="outlined"
-                onClick={() => window.open('/camera-test', '_blank')}
+                onClick={() => setDiagOpen(true)}
                 sx={{ borderColor: 'white', color: 'white', '&:hover': { borderColor: 'white', backgroundColor: 'rgba(255,255,255,0.1)' } }}
               >
-                🔧 Test Camera
+                🔧 Run Camera Diagnostic
               </Button>
-            </Box>
+              </Box>
           </Box>
         )}
 
+        {/* Loading indicator when camera is starting */}
+        {loading && !cameraActive && (
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+              zIndex: 5,
+              borderRadius: '8px'
+            }}
+          >
+            <CircularProgress size={60} sx={{ color: '#1976d2', mb: 2 }} />
+            <Typography variant="h6" sx={{ color: 'white', mb: 1 }}>
+              Starting Camera...
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+              Please allow camera access when prompted
+            </Typography>
+          </Box>
+        )}
+
+        {/* Always render video element - it needs to exist in DOM for stream attachment */}
+        <VideoPreview
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          style={{
+            visibility: cameraActive ? 'visible' : 'hidden',
+            opacity: cameraActive ? 1 : 0,
+            pointerEvents: cameraActive ? 'auto' : 'none',
+            zIndex: cameraActive ? 1 : 0
+          }}
+        />
+
         {cameraActive ? (
           <>
-            <VideoPreview
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-            />
-
             {/* Face Projection Overlay - Only show when not capturing */}
             {!capturing && (
               <FaceProjectionOverlay>
@@ -401,7 +456,7 @@ const VideoVerificationStep = ({
               ✓ CAPTURED
             </Box>
           </Box>
-        ) : (
+        ) : !loading ? (
           <Box
             sx={{
               height: '100%',
@@ -411,7 +466,13 @@ const VideoVerificationStep = ({
               justifyContent: 'center',
               backgroundColor: '#f5f5f5',
               border: '2px dashed #ccc',
-              borderRadius: '8px'
+              borderRadius: '8px',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: cameraActive ? 0 : 4
             }}
           >
             <Box sx={{ textAlign: 'center', p: 3, maxWidth: 400 }}>
@@ -436,9 +497,10 @@ const VideoVerificationStep = ({
                 </Typography>
               </Box>
 
-              <Typography variant="caption" color="error" sx={{ mb: 2, display: 'block' }}>
-                If camera doesn't work, try: <a href="/camera-test" target="_blank">Camera Test Page</a>
-              </Typography>
+              {/* Simplified inline diagnostic link */}
+              <Button variant="text" size="small" onClick={() => setDiagOpen(true)} sx={{ mt: 1 }}>
+                Run Camera Diagnostic
+              </Button>
 
               {/* Debug Button */}
               <Button
@@ -456,21 +518,23 @@ const VideoVerificationStep = ({
               <Button
                 variant="contained"
                 onClick={onStartCamera}
-                startIcon={<span>🎥</span>}
+                disabled={loading}
+                startIcon={loading ? <CircularProgress size={16} color="inherit" /> : <span>🎥</span>}
                 size="large"
                 sx={{
                   backgroundColor: '#1976d2',
-                  '&:hover': { backgroundColor: '#1565c0' }
+                  '&:hover': { backgroundColor: '#1565c0' },
+                  '&:disabled': { backgroundColor: '#ccc' }
                 }}
               >
-                Start Camera & Begin Recording
+                {loading ? 'Starting Camera...' : 'Start Camera & Begin Recording'}
               </Button>
               <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 2 }}>
                 Make sure you're in a well-lit area and your face is clearly visible
               </Typography>
             </Box>
           </Box>
-        )}
+        ) : null}
       </VideoContainer>
 
       <Box sx={{
@@ -487,7 +551,7 @@ const VideoVerificationStep = ({
             size="large"
             onClick={onStartCamera}
             disabled={loading || !!videoFrame}
-            startIcon={<span role="img" aria-label="camera">🎥</span>}
+            startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <span role="img" aria-label="camera">🎥</span>}
             sx={{
               minWidth: '200px',
               py: 1.5,
@@ -495,10 +559,13 @@ const VideoVerificationStep = ({
               backgroundColor: '#1976d2',
               '&:hover': {
                 backgroundColor: '#1565c0'
+              },
+              '&:disabled': {
+                backgroundColor: '#ccc'
               }
             }}
           >
-            {videoFrame ? 'Frame Captured' : 'Start Camera & Begin Recording'}
+            {loading ? 'Starting Camera...' : (videoFrame ? 'Frame Captured' : 'Start Camera & Begin Recording')}
           </Button>
         ) : (
           <>
@@ -650,6 +717,13 @@ const VideoVerificationStep = ({
         </Alert>
       )}
     </VerificationPaper>
+      {/* Inline Camera Diagnostic dialog */}
+      {typeof window !== 'undefined' && (
+        <React.Suspense fallback={null}>
+          <InlineCameraDiagnostic open={diagOpen} onClose={() => setDiagOpen(false)} />
+        </React.Suspense>
+      )}
+    </>
   );
 };
 

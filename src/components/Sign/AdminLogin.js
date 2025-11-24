@@ -1,5 +1,4 @@
 import "./SignUtils/CSS/Sign.css"
-import "./SignUtils/CSS/style.css.map"
 import "./SignUtils/fonts/material-icon/css/material-design-iconic-font.min.css"
 import signinimage from "./SignUtils/images/adminbanner.png"
 import { useState} from 'react';
@@ -35,6 +34,8 @@ const AdminLogin = () => {
 
             if(response.data.success){
                 loginSuccess();
+                // Save admin token for authenticated admin actions
+                try { localStorage.setItem('adminToken', response.data.token); } catch (e) {}
                 setTimeout(()=>{
                     navigate('/Admin');
                 },2000)

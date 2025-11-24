@@ -1,4 +1,4 @@
-.User-Card{
+.User-Card {
 
     border-radius: 1rem;
     margin: 0.5rem;
@@ -9,29 +9,206 @@
     background-color: whitesmoke;
 
 }
-.userImage{
+
+.userImage {
     justify-content: center;
     text-align: center;
     align-items: center;
 }
-.userImage img{
+
+.userImage img {
     width: 30%;
     height: 30%;
 }
-.userDetails1{
+
+.userDetails1 {
     border: none;
 }
-.userDetails1 p{
+
+.userDetails1 p {
     color: black;
     margin: 1.2rem 0rem;
     font-size: 20rem;
 }
-.userDetails1 p h6{
+
+.userDetails1 p h6 {
     font-size: 0.8rem;
 }
-.userDetails1 .notVoted{
+
+.userDetails1 .notVoted {
     color: red;
 }
-.userDetails1 .Voted{
+
+.userDetails1 .Voted {
     color: green;
+}
+
+/* Blocking Alert Styles */
+.blocking-alert {
+    background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+    border: 3px solid #990000;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin: 0.5rem 0.5rem 1.5rem 0.5rem;
+    color: white;
+    box-shadow: 0 4px 15px rgba(153, 0, 0, 0.4);
+    animation: slideDown 0.4s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.blocking-alert-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+    padding-bottom: 0.5rem;
+}
+
+.blocking-icon {
+    font-size: 2rem;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+.blocking-alert-header h3 {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: bold;
+}
+
+.blocking-alert-content {
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.blocking-alert-content p {
+    margin: 0.5rem 0;
+}
+
+.blocking-alert-footer {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 2px solid rgba(255, 255, 255, 0.3);
+    font-style: italic;
+    opacity: 0.95;
+}
+
+.blocked-status {
+    color: #ff4444;
+    font-weight: bold;
+    background-color: rgba(255, 255, 255, 0.2);
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+/* Toast notification styles */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+}
+
+.toast {
+    padding: 10px 14px;
+    border-radius: 6px;
+    color: #fff;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    font-size: 0.9rem;
+}
+
+.toast.success {
+    background-color: #28a745;
+}
+
+.toast.error {
+    background-color: #dc3545;
+}
+
+.editBtn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.editBtn:hover {
+    opacity: 0.95
+}
+
+.editForm input {
+    width: 100%;
+    padding: 6px;
+    margin-top: 4px;
+    margin-bottom: 8px
+}
+
+.editForm label {
+    font-size: 0.85rem
+}
+
+/* Verification Badge Styles */
+.verification-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.85em;
+    font-weight: 600;
+    margin-left: 10px;
+    vertical-align: middle;
+}
+
+.badge-verified {
+    background-color: #e6f4ea;
+    color: #1e8e3e;
+    border: 1px solid #1e8e3e;
+}
+
+.badge-rejected {
+    background-color: #fce8e6;
+    color: #d93025;
+    border: 1px solid #d93025;
+}
+
+.badge-pending {
+    background-color: #fef7e0;
+    color: #f9ab00;
+    border: 1px solid #f9ab00;
+}
+
+.badge-not-started {
+    background-color: #f1f3f4;
+    color: #5f6368;
+    border: 1px solid #5f6368;
+}
+
+.badge-icon {
+    margin-right: 4px;
 }

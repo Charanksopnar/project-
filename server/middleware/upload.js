@@ -30,12 +30,12 @@ const storage = multer.diskStorage({
   }
 });
 
-// File filter
+// File filter - accept images and PDFs for ID documents
 const fileFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith('image/')) {
+  if (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf') {
     cb(null, true);
   } else {
-    cb(new Error('Not an image! Please upload an image file.'), false);
+    cb(new Error('Unsupported file type. Please upload an image (JPG/PNG) or PDF.'), false);
   }
 };
 
@@ -48,8 +48,8 @@ const upload = multer({
   }
 });
 
-// Government ID types
-const GOVERNMENT_ID_TYPES = ['aadhar', 'pan', 'voter', 'driving'];
+// Government ID types (PAN and Driving License removed)
+const GOVERNMENT_ID_TYPES = ['aadhar', 'voter'];
 
 // Function to identify government ID type
 const identifyGovernmentIdType = (fileName) => {

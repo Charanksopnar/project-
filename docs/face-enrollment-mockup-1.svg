@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="700" viewBox="0 0 1000 700">
+  <style>
+    .bg{fill:#ffffff}
+    .panel{fill:#f8f9ff;stroke:#6c4df5;stroke-width:2;rx:8}
+    .btn{fill:#6c4df5;color:#fff}
+    .text{font-family:Inter,Arial,sans-serif;fill:#0b1226}
+    .muted{fill:#6b7280;font-size:13px}
+  </style>
+  <rect class="bg" x="0" y="0" width="1000" height="700"/>
+
+  <text class="text" x="30" y="40" style="font-size:20px;font-weight:600">Face Enrollment — Stepper (Front)</text>
+
+  <rect class="panel" x="30" y="70" width="640" height="440" rx="10"/>
+  <text class="muted" x="50" y="100">Instructions: Good lighting • No mask • Single person • Neutral background</text>
+
+  <!-- Camera preview box -->
+  <rect x="60" y="130" width="420" height="300" fill="#ffffff" stroke="#dfe6ff" stroke-width="2" rx="6"/>
+  <text class="muted" x="80" y="160">Camera preview</text>
+  <rect x="120" y="190" width="280" height="200" fill="#f3f4ff" stroke="#c9d3ff" rx="6"/>
+  <text class="text" x="200" y="290">Face bounding box</text>
+
+  <!-- Quality indicators -->
+  <g transform="translate(500,140)">
+    <text class="text" x="0" y="0">Quality</text>
+    <text class="muted" x="0" y="30">Sharpness: ✅</text>
+    <text class="muted" x="0" y="55">Brightness: ✅</text>
+    <text class="muted" x="0" y="80">Centered: ✅</text>
+    <text class="muted" x="0" y="105">Liveness: blink to confirm</text>
+  </g>
+
+  <!-- Action buttons -->
+  <rect class="btn" x="520" y="380" width="140" height="48" rx="6"/>
+  <text class="text" x="548" y="410" fill="#ffffff">Capture</text>
+
+  <rect x="680" y="380" width="140" height="48" rx="6" fill="#eef2ff" stroke="#cbd5ff"/>
+  <text class="text" x="720" y="410">Retake</text>
+
+  <!-- Stepper -->
+  <g transform="translate(30,540)">
+    <text class="muted" x="0" y="0">Step 1 of 5: Front</text>
+    <rect x="0" y="10" width="640" height="8" fill="#eee" rx="4"/>
+    <rect x="0" y="10" width="128" height="8" fill="#6c4df5" rx="4"/>
+  </g>
+
+  <!-- Right side small preview -->
+  <rect x="700" y="70" width="260" height="180" fill="#fff7ff" stroke="#ffe6b3" rx="8"/>
+  <text class="muted" x="720" y="100">Preview thumbnails</text>
+
+  <text class="muted" x="30" y="680">Mockup: clear instructions, live preview, quality indicators and stepper.</text>
+</svg>

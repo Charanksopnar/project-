@@ -23,8 +23,9 @@
     padding: 1rem;
     margin: 0.5rem;
     width: 30%;
-    background-color: #89c4ee;
-    border-radius: 4%;
+    background-color: #6aaed6; /* slightly deeper blue for better contrast */
+    border-radius: 8px;
+    color: #0b2a3a;
 }
 
 .upcomingElections .upcomingElectionsCardContainer .upcomingElectionCard:hover {
@@ -39,10 +40,33 @@
 .upcomingElections .upcomingElectionsCardContainer .upcomingElectionCard p {}
 
 .upcomingElections .upcomingElectionsCardContainer .upcomingElectionCard button {
-    background-color: black;
-    color: #89c4ee;
-    padding: 0.5rem;
-    border-radius: 6%;
+    background-color: #000;
+    color: #ffffff; /* high contrast text */
+    padding: 0.6rem 0.9rem;
+    border-radius: 6px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+    transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+}
+
+.upcomingElections .upcomingElectionsCardContainer .upcomingElectionCard button:hover:enabled {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.2);
+}
+
+.upcomingElections .upcomingElectionsCardContainer .upcomingElectionCard button:disabled {
+    background-color: #6c757d; /* neutral grey for disabled */
+    color: #ffffff;
+    opacity: 0.95; /* avoid looking washed-out against the card */
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.upcomingElections .upcomingElectionsCardContainer .upcomingElectionCard button:focus {
+    outline: 3px solid rgba(46,204,113,0.25);
+    outline-offset: 2px;
 }
 
 .upcomingElections .upcomingElectionsCardContainer .upcomingElectionCard button a {

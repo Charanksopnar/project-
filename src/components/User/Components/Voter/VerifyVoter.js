@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Box, Button, Typography, Alert } from '@mui/material';
 
 // Import custom hooks
@@ -14,7 +15,7 @@ import VideoVerificationStep from './components/VideoVerificationStep';
 import VerificationCompleteStep from './components/VerificationCompleteStep';
 import ErrorBoundary from './components/ErrorBoundary';
 
-const VerifyVoter = ({ onVerificationComplete }) => {
+const VerifyVoter = ({ onVerificationComplete, afterCompleteNavigateTo }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [idImage, setIdImage] = useState(null);
   const [videoFrame, setVideoFrame] = useState(null);
@@ -25,6 +26,7 @@ const VerifyVoter = ({ onVerificationComplete }) => {
   const faceDetection = useFaceDetection(camera.videoRef, camera.cameraActive);
   const advancedFaceDetection = useAdvancedFaceDetection(camera.videoRef, camera.cameraActive);
   const verification = useVerification();
+  const navigate = useNavigate();
 
   const handleIdVerificationComplete = (result) => {
     setVerificationId(result.verificationId);
@@ -39,6 +41,10 @@ const VerifyVoter = ({ onVerificationComplete }) => {
         setVerificationId(finalVerificationId);
         setCurrentStep(3);
         onVerificationComplete(finalVerificationId);
+        // Optional automatic navigation after successful verification
+        if (afterCompleteNavigateTo) {
+          try { navigate(afterCompleteNavigateTo); } catch (e) { /* ignore */ }
+        }
       }
     } catch (error) {
       console.error('Video verification failed:', error);
@@ -107,8 +113,8 @@ const VerifyVoter = ({ onVerificationComplete }) => {
             onCaptureFrame={handleCaptureFrame}
             onRetakeFrame={handleRetakeFrame}
             onVerificationComplete={handleVideoVerificationComplete}
-            loading={verification.loading}
-            error={verification.error}
+            loading={verification.loading || camera.isLoading}
+            error={camera.error || verification.error}
             poseSteps={faceDetection.poseSteps}
             promptIndex={faceDetection.promptIndex}
             liveSimilarity={faceDetection.liveSimilarity}

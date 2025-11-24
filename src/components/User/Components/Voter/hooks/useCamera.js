@@ -3,6 +3,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 export const useCamera = () => {
   const [cameraActive, setCameraActive] = useState(false);
   const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [retryAttempts, setRetryAttempts] = useState(0);
   const [videoDevices, setVideoDevices] = useState([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState(null);
@@ -47,6 +48,7 @@ export const useCamera = () => {
   const startCamera = async (retryWithBasicConstraints = false) => {
     try {
       setError(null);
+      setIsLoading(true);
       console.log('🔄 Requesting camera access...');
 
       // Define constraints first
@@ -96,22 +98,32 @@ export const useCamera = () => {
 
         // Clear any existing stream
         if (videoRef.current.srcObject) {
+          const oldStream = videoRef.current.srcObject;
+          oldStream.getTracks().forEach(track => track.stop());
           videoRef.current.srcObject = null;
         }
 
+        // Ensure video element is visible and ready
+        videoRef.current.style.visibility = 'visible';
+        videoRef.current.style.opacity = '1';
+        videoRef.current.style.display = 'block';
+        
         // Set the new stream
         videoRef.current.srcObject = stream;
+        
+        // Force video to load and play
+        videoRef.current.load();
 
         // Set video properties
         videoRef.current.autoplay = true;
         videoRef.current.playsInline = true;
         videoRef.current.muted = true;
         videoRef.current.volume = 0;
-
-        // Ensure video element is visible
-        videoRef.current.style.display = 'block';
+        
+        // Set video dimensions
         videoRef.current.style.width = '100%';
         videoRef.current.style.height = '100%';
+        videoRef.current.style.objectFit = 'cover';
 
         console.log('Video element properties:', {
           videoWidth: videoRef.current.videoWidth,
@@ -135,10 +147,29 @@ export const useCamera = () => {
 
         // Wait for video to be ready and play
         await new Promise((resolve, reject) => {
+          // Check if video is already ready
+          if (videoRef.current.readyState >= 2) {
+            console.log('Video already ready, playing immediately...');
+            videoRef.current.play()
+              .then(() => {
+                console.log('✅ Video playing successfully');
+                resolve();
+              })
+              .catch((playError) => {
+                console.error('❌ Failed to play video:', playError);
+                // Don't reject - continue anyway
+                resolve();
+              });
+            return;
+          }
+
           const handleCanPlay = () => {
             console.log('Video can play, attempting to play...');
-            videoRef.current.removeEventListener('canplay', handleCanPlay);
-            videoRef.current.removeEventListener('error', handleError);
+            if (videoRef.current) {
+              videoRef.current.removeEventListener('canplay', handleCanPlay);
+              videoRef.current.removeEventListener('loadedmetadata', handleCanPlay);
+              videoRef.current.removeEventListener('error', handleError);
+            }
 
             videoRef.current.play()
               .then(() => {
@@ -148,29 +179,45 @@ export const useCamera = () => {
               })
               .catch((playError) => {
                 console.error('❌ Failed to play video:', playError);
-                reject(playError);
+                // Don't reject - video might still work
+                console.warn('Continuing despite play error...');
+                resolve();
               });
           };
 
           const handleError = (error) => {
             console.error('❌ Video element error:', error);
-            videoRef.current.removeEventListener('canplay', handleCanPlay);
-            videoRef.current.removeEventListener('error', handleError);
-            reject(error);
+            if (videoRef.current) {
+              videoRef.current.removeEventListener('canplay', handleCanPlay);
+              videoRef.current.removeEventListener('loadedmetadata', handleCanPlay);
+              videoRef.current.removeEventListener('error', handleError);
+            }
+            // Don't reject - continue anyway
+            console.warn('Continuing despite video error...');
+            resolve();
           };
 
           videoRef.current.addEventListener('canplay', handleCanPlay);
+          videoRef.current.addEventListener('loadedmetadata', handleCanPlay);
           videoRef.current.addEventListener('error', handleError);
 
-          // Timeout fallback
+          // Try to play immediately
+          videoRef.current.play().catch(() => {
+            console.log('Initial play failed, waiting for canplay event...');
+          });
+
+          // Timeout fallback - resolve after 2 seconds regardless
           setTimeout(() => {
-            if (videoRef.current.readyState < 2) {
-              console.warn('Video loading timeout, attempting to resolve anyway');
+            console.log('Video setup timeout - resolving anyway');
+            if (videoRef.current) {
               videoRef.current.removeEventListener('canplay', handleCanPlay);
+              videoRef.current.removeEventListener('loadedmetadata', handleCanPlay);
               videoRef.current.removeEventListener('error', handleError);
-              resolve(); // Resolve anyway to prevent hanging
+              // Try one more time to play
+              videoRef.current.play().catch(() => {});
             }
-          }, 3000);
+            resolve();
+          }, 2000);
         });
 
         console.log('✅ Camera setup completed successfully');
@@ -189,8 +236,10 @@ export const useCamera = () => {
 
       setCameraActive(true);
       setRetryAttempts(0);
+      setIsLoading(false);
       console.log('🎉 Camera is now active and ready!');
     } catch (error) {
+      setIsLoading(false);
       console.error('❌ Error accessing camera:', error);
       console.error('❌ Error details:', {
         name: error.name,
@@ -312,6 +361,7 @@ export const useCamera = () => {
     videoRef,
     cameraActive,
     error,
+    isLoading,
     videoDevices,
     selectedDeviceId,
     setSelectedDeviceId,

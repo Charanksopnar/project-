@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="700" viewBox="0 0 1000 700">
+  <style>
+    .bg{fill:#fff}
+    .panel{fill:#fbfcff;stroke:#d7ddff;stroke-width:1;rx:8}
+    .warn{fill:#fff7f0;stroke:#ffb020}
+    .text{font-family:Inter,Arial,sans-serif;fill:#0b1226}
+    .muted{fill:#6b7280;font-size:13px}
+  </style>
+
+  <rect class="bg" x="0" y="0" width="1000" height="700"/>
+  <text class="text" x="30" y="40" style="font-size:20px;font-weight:600">Voting Page — Live Monitoring</text>
+
+  <rect class="panel" x="30" y="70" width="640" height="440" rx="10"/>
+  <text class="muted" x="50" y="100">Consent: Camera and Mic required • You will be monitored for liveness</text>
+
+  <!-- video preview -->
+  <rect x="60" y="130" width="540" height="320" fill="#f3f6ff" stroke="#dfe8ff" rx="6"/>
+  <text class="muted" x="80" y="160">Live camera</text>
+
+  <!-- overlay indicators -->
+  <g transform="translate(620,130)">
+    <rect x="0" y="0" width="320" height="120" fill="#fff" stroke="#e6e9ff" rx="8"/>
+    <text class="text" x="16" y="28" style="font-weight:600">Realtime Status</text>
+    <text class="muted" x="16" y="56">Face Match: ✅ (0.82)</text>
+    <text class="muted" x="16" y="80">Liveness: ✅</text>
+    <text class="muted" x="16" y="104">Faces in frame: 1</text>
+  </g>
+
+  <!-- Violation area -->
+  <g transform="translate(620,260)">
+    <rect class="warn" x="0" y="0" width="320" height="120" rx="8"/>
+    <text class="text" x="16" y="30" style="font-weight:700">Warning</text>
+    <text class="muted" x="16" y="60">Rule violation detected: Mask detected</text>
+    <text class="muted" x="16" y="86">Remaining warnings: 2</text>
+  </g>
+
+  <!-- Action area -->
+  <rect x="620" y="400" width="320" height="110" fill="#f7f9ff" stroke="#e1e8ff" rx="8"/>
+  <text class="text" x="640" y="434">Voting Controls</text>
+  <rect x="640" y="460" width="160" height="44" rx="6" fill="#6c4df5"/>
+  <text class="text" x="680" y="492" fill="#fff">Submit Vote</text>
+
+  <text class="muted" x="30" y="640">Mockup: realtime status panel, violation warnings, and action area. Warnings reduce submit privileges.</text>
+</svg>

@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1600" viewBox="0 0 1200 1600">
+  <style>
+    .bg { fill: #ffffff; }
+    .step { fill: #f6f8ff; stroke: #6a4ef5; stroke-width:2; rx:12; }
+    .step-text { font-family: Arial, sans-serif; font-size:14px; fill:#111827; }
+    .title { font-family: Arial, sans-serif; font-size:22px; font-weight:700; fill:#2b2b2b; }
+    .sub { font-family: Arial, sans-serif; font-size:12px; fill:#555; }
+    .diamond { fill:#fff5f8; stroke:#ff6b6b; stroke-width:2; }
+    .arrow { stroke:#6a4ef5; stroke-width:2; fill:none; marker-end: url(#arrowhead); }
+    .icon { fill:#6a4ef5; }
+    .db { fill:#dbeafe; stroke:#3b82f6; stroke-width:1.5; }
+    .warn { fill:#fff7ed; stroke:#f59e0b; stroke-width:2; }
+  </style>
+
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="6" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#6a4ef5" />
+    </marker>
+  </defs>
+
+  <rect class="bg" width="1200" height="1600"/>
+
+  <text x="48" y="40" class="title">Face Enrollment and Liveness-based Voting Verification</text>
+  <text x="48" y="70" class="sub">Two phases: Face Enrollment (left) and Liveness & Voting (right). White background, purple/blue accents.</text>
+
+  <!-- Enrollment column -->
+  <g transform="translate(40,110)">
+    <text x="0" y="0" class="sub" style="font-weight:600;">Phase 1 — Face Enrollment (after ID verification)</text>
+
+    <!-- Start -->
+    <rect class="step" x="0" y="30" width="420" height="48"/>
+    <text x="20" y="62" class="step-text">Start</text>
+
+    <line class="arrow" x1="210" y1="78" x2="210" y2="120" />
+
+    <!-- ID Verified -->
+    <rect class="step" x="0" y="120" width="420" height="56"/>
+    <text x="20" y="154" class="step-text">ID Verified → Backend sets <tspan font-weight="700">idVerified = true</tspan></text>
+
+    <line class="arrow" x1="210" y1="176" x2="210" y2="216" />
+
+    <!-- Open Enrollment -->
+    <rect class="step" x="0" y="216" width="420" height="56"/>
+    <text x="20" y="250" class="step-text">Open Face Enrollment Screen (show instructions)</text>
+
+    <line class="arrow" x1="210" y1="272" x2="210" y2="320" />
+
+    <!-- Capture series -->
+    <rect class="step" x="0" y="320" width="420" height="48"/>
+    <text x="20" y="350" class="step-text">Capture: Front → Left → Right → Up → Down (five angles)</text>
+
+    <line class="arrow" x1="210" y1="368" x2="210" y2="420" />
+
+    <!-- Quality & Liveness -->
+    <rect class="step" x="0" y="420" width="420" height="64"/>
+    <text x="20" y="450" class="step-text">Quality & Liveness Check (face detected, sharpness, brightness, centered, blink/turn/smile)</text>
+
+    <line class="arrow" x1="210" y1="484" x2="210" y2="540" />
+
+    <!-- Create Face Profile -->
+    <rect class="step" x="0" y="540" width="420" height="56"/>
+    <text x="20" y="574" class="step-text">Create Face Profile — store embeddings for each angle</text>
+
+    <line class="arrow" x1="420" y1="568" x2="520" y2="568" />
+
+    <!-- DB icon -->
+    <g transform="translate(540,540)">
+      <rect class="db" x="0" y="0" width="120" height="56" rx="8"/>
+      <text x="8" y="34" class="sub" style="fill:#1e3a8a;">FaceProfile DB</text>
+    </g>
+
+    <line class="arrow" x1="210" y1="596" x2="210" y2="640" />
+
+    <!-- Enrollment Completed -->
+    <rect class="step" x="0" y="640" width="420" height="48"/>
+    <text x="20" y="672" class="step-text">Face Enrollment Completed → mark <tspan font-weight="700">faceEnrolled = true</tspan></text>
+  </g>
+
+  <!-- Voting column -->
+  <g transform="translate(620,110)">
+    <text x="0" y="0" class="sub" style="font-weight:600;">Phase 2 — Liveness & Voting</text>
+
+    <rect class="step" x="0" y="30" width="480" height="48"/>
+    <text x="20" y="62" class="step-text">Start Voting (check: idVerified && faceEnrolled && !isBlocked)</text>
+
+    <line class="arrow" x1="240" y1="78" x2="240" y2="120" />
+
+    <rect class="step" x="0" y="120" width="480" height="56"/>
+    <text x="20" y="154" class="step-text">Camera & Mic On (consent) — show instructions: Keep only your face in frame</text>
+
+    <line class="arrow" x1="240" y1="176" x2="240" y2="220" />
+
+    <rect class="step" x="0" y="220" width="480" height="80"/>
+    <text x="20" y="255" class="step-text">Real-time Analysis (loop every 1–2s):</text>
+    <text x="36" y="275" class="sub">• Face match vs stored embeddings</text>
+    <text x="36" y="292" class="sub">• Liveness (blink/head movement/challenge)</text>
+    <text x="36" y="309" class="sub">• Multi-person detection</text>
+    <text x="36" y="326" class="sub">• Mask/occlusion detection</text>
+    <text x="36" y="343" class="sub">• Audio checks (optional)</text>
+
+    <line class="arrow" x1="240" y1="300" x2="240" y2="380" />
+
+    <!-- Decision diamond -->
+    <g transform="translate(192,380)">
+      <polygon class="diamond" points="48,0 96,48 48,96 0,48" />
+      <text x="20" y="54" class="step-text">Any Rule Violation?</text>
+    </g>
+
+    <line class="arrow" x1="240" y1="476" x2="240" y2="520" />
+
+    <!-- No path -->
+    <rect class="step" x="-60" y="520" width="360" height="48"/>
+    <text x="-40" y="552" class="step-text">No → Allow Vote and Submit Ballot</text>
+
+    <!-- Yes path flows right -->
+    <line class="arrow" x1="480" y1="420" x2="600" y2="420" />
+
+    <g transform="translate(600,380)">
+      <rect class="warn" x="0" y="40" width="360" height="48" rx="8"/>
+      <text x="12" y="72" class="step-text">Warning 1 — show message, highlight in yellow, continue monitoring</text>
+
+      <line class="arrow" x1="180" y1="88" x2="180" y2="140" />
+
+      <rect class="warn" x="0" y="140" width="360" height="48" rx="8"/>
+      <text x="12" y="172" class="step-text">Warning 2 — pause voting button briefly</text>
+
+      <line class="arrow" x1="180" y1="188" x2="180" y2="240" />
+
+      <rect class="warn" x="0" y="240" width="360" height="64" rx="8"/>
+      <text x="12" y="272" class="step-text">Third Violation or Severe — Mark Vote INVALID, Block user for election, Notify User & Admin</text>
+
+      <line class="arrow" x1="180" y1="304" x2="180" y2="360" />
+
+      <rect class="db" x="0" y="360" width="360" height="56" rx="8"/>
+      <text x="12" y="392" class="sub" style="fill:#1e3a8a;">Violation Log / Evidence Storage</text>
+    </g>
+
+  </g>
+
+  <text x="48" y="1500" class="sub">Diagram generated: process boxes (rectangles), decision (diamond), arrows, database and warning sections. File: docs/face_enrollment_liveness_workflow.svg</text>
+</svg>

@@ -1,39 +1,67 @@
 import { useTheme } from "@mui/material";
 import { ResponsiveBar } from "@nivo/bar";
 import { tokens } from "../theme";
-// import { mockBarData as data } from "../data/mockData";
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { BASE_URL } from "../../../helper";
 
-const BarChart = ({ isDashboard = false }) => {
+const BarChart = ({ isDashboard = false, electionId }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
-  const [candidate, setCandidate] = useState([]);
+  const [data, setData] = useState([]);
+
   useEffect(() => {
-    axios.get(`${BASE_URL}/getCandidate`)
-      .then((response) => setCandidate(response.data.candidate))
-      .catch(err => console.error("Error fetching data: ", err));
-  }, [])
-  const data = candidate.reduce((acc, candidated) => {
-    if (candidated && candidated.party) {
-      const partyIndex = acc.findIndex(item => item.party === candidated.party);
-      if (partyIndex > -1) {
-        acc[partyIndex].votes += candidated.votes;
-      } else {
-        acc.push({ party: candidated.party, votes: candidated.votes });
+    const fetchData = async () => {
+      try {
+        if (electionId) {
+          const response = await axios.get(`${BASE_URL}/getElectionResults/${electionId}`);
+          if (response.data.success && response.data.election && response.data.election.candidates) {
+            const formattedData = response.data.election.candidates.map(c => ({
+              party: c.party,
+              votes: c.votes,
+              name: c.name
+            }));
+
+            const aggregatedData = formattedData.reduce((acc, curr) => {
+              const partyIndex = acc.findIndex(item => item.party === curr.party);
+              if (partyIndex > -1) {
+                acc[partyIndex].votes += curr.votes;
+              } else {
+                acc.push({ party: curr.party, votes: curr.votes });
+              }
+              return acc;
+            }, []);
+            setData(aggregatedData);
+          }
+        } else {
+          const response = await axios.get(`${BASE_URL}/getCandidate`);
+          const candidates = response.data.candidate;
+          const aggregatedData = candidates.reduce((acc, candidated) => {
+            if (candidated && candidated.party) {
+              const partyIndex = acc.findIndex(item => item.party === candidated.party);
+              if (partyIndex > -1) {
+                acc[partyIndex].votes += candidated.votes;
+              } else {
+                acc.push({ party: candidated.party, votes: candidated.votes });
+              }
+            }
+            return acc;
+          }, []);
+          setData(aggregatedData);
+        }
+      } catch (err) {
+        console.error("Error fetching data: ", err);
       }
-    }
-    return acc;
-  }, []);
+    };
+
+    fetchData();
+  }, [electionId]);
 
   return (
-
     <ResponsiveBar
       data={data}
       theme={{
-        // added
         axis: {
           domain: {
             line: {
@@ -62,7 +90,7 @@ const BarChart = ({ isDashboard = false }) => {
         },
       }}
       keys={["votes"]}
-      indexBy="party"      
+      indexBy="party"
       margin={{ top: 50, right: 50, bottom: 50, left: 60 }}
       padding={0.5}
       valueScale={{ type: "linear" }}
@@ -92,14 +120,14 @@ const BarChart = ({ isDashboard = false }) => {
         from: "color",
         modifiers: [["darker", "1.6"]],
       }}
-      
+
       axisTop={null}
       axisRight={null}
       axisBottom={{
         tickSize: 5,
         tickPadding: 5,
         tickRotation: 0,
-        legend: isDashboard ? undefined : "Parties", // changed
+        legend: isDashboard ? undefined : "Parties",
         legendPosition: "middle",
         legendOffset: 32,
       }}
@@ -107,7 +135,7 @@ const BarChart = ({ isDashboard = false }) => {
         tickSize: 8,
         tickPadding: 5,
         tickRotation: 0,
-        legend: isDashboard ? undefined : "Votes", // changed
+        legend: isDashboard ? undefined : "Votes",
         legendPosition: "middle",
         legendOffset: -40,
       }}
@@ -146,7 +174,6 @@ const BarChart = ({ isDashboard = false }) => {
       barAriaLabel={function (e) {
         return e.id + ": " + e.formattedValue + " votes for party: " + e.indexValue;
       }}
-
     />
   );
 };

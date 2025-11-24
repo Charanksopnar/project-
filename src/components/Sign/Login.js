@@ -1,11 +1,11 @@
 import "./SignUtils/CSS/Sign.css"
-import "./SignUtils/CSS/style.css.map"
 import "./SignUtils/fonts/material-icon/css/material-design-iconic-font.min.css"
 import signinimage from "./SignUtils/images/signin-image.jpg"
 import { useState} from 'react';
 import { Link } from 'react-router-dom';
 import Nav_bar from "../Navbar/Navbar";
 import axios from "axios";
+import Cookies from 'js-cookie';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useNavigate } from 'react-router-dom';
@@ -35,7 +35,15 @@ const Login = () => {
             console.log('Login response:', response.data);
 
             if(response.data.success){
-                const voterst = response.data.voterObject;
+                const { token, voterObject: voterst } = response.data;
+                try {
+                    if (voterst && (voterst._id || voterst.id)) {
+                        Cookies.set('myCookie', voterst._id || voterst.id, { expires: 7 });
+                    }
+                    if (token) localStorage.setItem('voterToken', token);
+                } catch (e) {
+                    console.warn('Failed to persist login state:', e);
+                }
                 loginSuccess();
                 setTimeout(()=>{
                     navigate('/User', { state: { voterst } });

@@ -1,0 +1,12 @@
+{
+  "success": true,
+  "verified": true,
+  "method": "OCR",
+  "layer": 1,
+  "message": "ID verified successfully via OCR matching",
+  "details": {
+    "ocrMatched": true,
+    "aadhaarMatch": true,
+    "voterIdMatch": false
+  }
+}

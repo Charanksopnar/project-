@@ -1,4 +1,4 @@
-import { createContext, useState, useMemo } from "react";
+import { createContext, useState, useMemo, useEffect } from "react";
 import { createTheme } from '@mui/material/styles';
 
 export const tokens = (mode) => ({
@@ -195,14 +195,59 @@ export const ColorModeContext = createContext({
 });
 
 export const useMode = () =>{
-    const [mode,setMode] = useState("dark");
+    const [mode,setMode] = useState(() => {
+        try {
+            if (typeof window !== 'undefined' && window.localStorage) {
+                const saved = window.localStorage.getItem('appTheme');
+                if (saved === 'light' || saved === 'dark') return saved;
+                const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                return prefersDark ? 'dark' : 'light';
+            }
+        } catch (e) {
+            // ignore and fall back
+        }
+        return 'dark';
+    });
+
     const colorMode = useMemo(
         () => ({
-            toggleColorMode: () => 
-                setMode((prev) => (prev==="light"? "dark" : "light"))
+            toggleColorMode: () => {
+                setMode((prev) => {
+                    const next = prev === 'light' ? 'dark' : 'light';
+                    try {
+                        if (typeof window !== 'undefined' && window.localStorage) {
+                            window.localStorage.setItem('appTheme', next);
+                        }
+                    } catch (e) {
+                        // ignore storage errors
+                    }
+                    return next;
+                });
+            }
         }),
         []
     );
+
+    useEffect(() => {
+        try {
+            if (typeof window !== 'undefined' && window.localStorage) {
+                window.localStorage.setItem('appTheme', mode);
+            }
+        } catch (e) {
+            // ignore
+        }
+    }, [mode]);
+
+    // keep a data attribute on the root so non-MUI CSS can react to theme
+    useEffect(() => {
+        try {
+            if (typeof document !== 'undefined' && document.documentElement) {
+                document.documentElement.setAttribute('data-theme', mode);
+            }
+        } catch (e) {
+            // ignore
+        }
+    }, [mode]);
 
     const theme = useMemo(() => createTheme(themeSettings(mode)), [mode]);
 

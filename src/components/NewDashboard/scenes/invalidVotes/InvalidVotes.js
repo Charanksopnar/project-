@@ -1,23 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, useTheme } from '@mui/material';
+import { Box, Typography, useTheme, CssBaseline, ThemeProvider } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
-import { tokens } from '../../theme';
+import { tokens, ColorModeContext, useMode } from '../../theme';
 import Header from '../../newComponents/Header.jsx';
+import Topbar from '../global/Topbar';
+import Sidebar from '../global/Sidebar';
 import axios from 'axios';
 import { BASE_URL } from '../../../../helper';
+import io from 'socket.io-client';
 
-const InvalidVotes = () => {
+const InvalidVotesContent = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const [invalidVotes, setInvalidVotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredVotes, setFilteredVotes] = useState([]);
 
   useEffect(() => {
     const fetchInvalidVotes = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${BASE_URL}/getInvalidVotes`);
+        const response = await axios.get(`${BASE_URL}/api/getInvalidVotes`);
 
         if (response.data.success) {
           // Add an id field for DataGrid
@@ -27,6 +32,7 @@ const InvalidVotes = () => {
           }));
 
           setInvalidVotes(formattedData);
+          setFilteredVotes(formattedData);
         } else {
           setError('Failed to fetch invalid votes');
         }
@@ -39,7 +45,67 @@ const InvalidVotes = () => {
     };
 
     fetchInvalidVotes();
+
+    // Socket connection for live updates
+    const socket = io(BASE_URL);
+
+    socket.on('connect', () => {
+      console.log('Connected to socket server for invalid votes updates');
+    });
+
+    socket.on('admin:security-alert', (alert) => {
+      if (alert.type === 'VOTING_VIOLATION') {
+        setInvalidVotes((prevVotes) => {
+          // Create new vote object from alert data
+          const newVote = {
+            id: `live_${Date.now()}`, // Temporary ID until refresh
+            voterId: alert.voterId,
+            candidateId: 'N/A', // Not usually in alert but consistent with schema
+            violationType: alert.violationType,
+            violationDetails: alert.message,
+            timestamp: alert.timestamp
+          };
+
+          const updatedVotes = [...prevVotes, newVote];
+          // Also update filtered votes if no search query is active
+          setFilteredVotes((prevFiltered) => {
+            if (searchQueryRef.current === '') {
+              return [...prevFiltered, newVote];
+            }
+            return prevFiltered;
+          });
+
+          return updatedVotes;
+        });
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, []);
+
+  // Ref to keep track of search query inside socket callback
+  const searchQueryRef = React.useRef('');
+
+  useEffect(() => {
+    searchQueryRef.current = searchQuery;
+  }, [searchQuery]);
+
+  // Handle search functionality
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    if (query.trim() === '') {
+      setFilteredVotes(invalidVotes);
+    } else {
+      const filtered = invalidVotes.filter((vote) =>
+        vote.voterId?.toLowerCase().includes(query.toLowerCase()) ||
+        vote.candidateId?.toLowerCase().includes(query.toLowerCase()) ||
+        vote.violationType?.toLowerCase().includes(query.toLowerCase())
+      );
+      setFilteredVotes(filtered);
+    }
+  };
 
   // Format violation type for display
   const formatViolationType = (type) => {
@@ -52,6 +118,42 @@ const InvalidVotes = () => {
         return 'Fraud Detection';
       default:
         return 'Other Violation';
+    }
+  };
+
+  // Handle refresh functionality
+  const handleRefresh = () => {
+    setLoading(true);
+    window.location.reload();
+  };
+
+  // Handle export to CSV
+  const handleExport = () => {
+    try {
+      const headers = ['ID', 'Voter ID', 'Candidate ID', 'Violation Type', 'Details', 'Timestamp'];
+      const csvData = filteredVotes.map(vote => [
+        vote.id,
+        vote.voterId,
+        vote.candidateId,
+        formatViolationType(vote.violationType),
+        vote.violationDetails,
+        new Date(vote.timestamp).toLocaleString()
+      ]);
+
+      const csvContent = [
+        headers.join(','),
+        ...csvData.map(row => row.map(cell => `"${cell}"`).join(','))
+      ].join('\n');
+
+      const element = document.createElement('a');
+      element.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent));
+      element.setAttribute('download', 'invalid_votes.csv');
+      element.style.display = 'none';
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
+    } catch (error) {
+      console.error('Error exporting data:', error);
     }
   };
 
@@ -75,8 +177,8 @@ const InvalidVotes = () => {
             row.violationType === 'multiple_faces'
               ? colors.redAccent[600]
               : row.violationType === 'multiple_voices'
-              ? colors.redAccent[700]
-              : colors.redAccent[800]
+                ? colors.redAccent[700]
+                : colors.redAccent[800]
           }
           borderRadius="4px"
         >
@@ -142,7 +244,7 @@ const InvalidVotes = () => {
         }}
       >
         <DataGrid
-          rows={invalidVotes}
+          rows={filteredVotes}
           columns={columns}
           loading={loading}
           initialState={{
@@ -154,6 +256,25 @@ const InvalidVotes = () => {
         />
       </Box>
     </Box>
+  );
+};
+
+const InvalidVotes = () => {
+  const [theme, colorMode] = useMode();
+
+  return (
+    <ColorModeContext.Provider value={colorMode}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <div className="appNew">
+          <Sidebar />
+          <main className="content">
+            <Topbar />
+            <InvalidVotesContent />
+          </main>
+        </div>
+      </ThemeProvider>
+    </ColorModeContext.Provider>
   );
 };
 

@@ -100,16 +100,13 @@ async function verifyID(req, res, next) {
     
     // Verify the ID based on type
     let verificationResult;
-    
+
     switch (idType.toLowerCase()) {
       case 'aadhar':
         verificationResult = await idVerification.verifyAadharCard(idImageBuffer);
         break;
       case 'voter':
         verificationResult = await idVerification.verifyVoterID(idImageBuffer);
-        break;
-      case 'driving':
-        verificationResult = await idVerification.verifyDrivingLicense(idImageBuffer);
         break;
       default:
         throw new errorHandler.ValidationError('Unsupported ID type');

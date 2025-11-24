@@ -3,6 +3,7 @@ const path = require('path');
 const router = express.Router();
 
 const { runPython } = require('../biometrics/pythonRunner');
+const liveness = require('../biometrics/livenessDetection');
 
 /**
  * POST /biometrics/verify
@@ -63,4 +64,27 @@ router.post('/verify', async (req, res) => {
   }
 });
 
+/**
+ * POST /biometrics/liveness/report
+ * Body: { voterId: string, candidateId: string, personCount: number, recordingId?: string }
+ * Accepts lightweight detection reports from the client (frame-based or periodic)
+ * and uses server logic to track warnings and invalidate votes if policy violated.
+ */
+router.post('/liveness/report', async (req, res) => {
+  const { voterId, candidateId, personCount, recordingId } = req.body || {};
+
+  if (!voterId || typeof personCount === 'undefined' || !candidateId) {
+    return res.status(400).json({ success: false, message: 'Missing required fields: voterId, candidateId, personCount' });
+  }
+
+  try {
+    const result = await liveness.processDetectionReport(String(voterId), String(candidateId), Number(personCount), recordingId);
+    return res.status(200).json({ success: true, result });
+  } catch (err) {
+    console.error('Error processing liveness report:', err);
+    return res.status(500).json({ success: false, message: 'Server error processing liveness report', error: String(err) });
+  }
+});
+
 module.exports = router;
+

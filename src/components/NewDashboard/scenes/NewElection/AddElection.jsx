@@ -13,19 +13,49 @@ import { ColorModeContext, useMode } from "../../theme";
 import { CssBaseline, ThemeProvider } from "@mui/material";
 import Topbar from "../global/Topbar";
 import Sidebar from "../global/Sidebar";
+import { useRealtime } from "../../../../context/RealtimeContext";
 
 const AddElection = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const isNonMobile = useMediaQuery("(min-width:600px)");
   const [loading, setLoading] = useState(false);
+  const { connected, emitElectionCreate } = useRealtime();
 
   const handleFormSubmit = async (values, { resetForm }) => {
     setLoading(true);
     try {
-      const response = await axios.post(`${BASE_URL}/createElection`, values);
-      if (response.data.success) {
-        toast.success("Election created successfully!");
+      // First, save to database via REST API
+      const response = await axios.post(`${BASE_URL}/api/createElection`, {
+        name: values.name,
+        title: values.name,
+        description: values.description,
+        startDate: values.startDate,
+        endDate: values.endDate,
+        status: 'upcoming'
+      });
+
+      if (response.data.success || response.data.election) {
+        const newElection = response.data.election || {
+          _id: Date.now().toString(),
+          name: values.name,
+          title: values.name,
+          description: values.description,
+          startDate: values.startDate,
+          endDate: values.endDate,
+          status: 'upcoming',
+          createdAt: new Date()
+        };
+
+        // Then, broadcast via Socket.IO to all connected clients
+        if (connected) {
+          emitElectionCreate(newElection);
+        } else {
+          // Fallback: Still emit event even if not connected
+          emitElectionCreate(newElection);
+        }
+
+        toast.success("Election created successfully! ✨");
         resetForm();
       } else {
         toast.error("Failed to create election");
@@ -131,9 +161,9 @@ const AddElection = () => {
                       />
                     </Box>
                     <Box display="flex" justifyContent="end" mt="20px">
-                      <Button 
-                        type="submit" 
-                        color="secondary" 
+                      <Button
+                        type="submit"
+                        color="secondary"
                         variant="contained"
                         disabled={loading}
                       >

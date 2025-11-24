@@ -17,20 +17,30 @@ export class IDScanner {
     try {
       console.log('🔧 Initializing ID Scanner...');
       
-      // Load face-api models for face detection and recognition
-      await Promise.all([
-        faceapi.nets.ssdMobilenetv1.loadFromUri('/models'),
-        faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
-        faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
-        faceapi.nets.ageGenderNet.loadFromUri('/models')
-      ]);
+      // Try to load face-api models for face detection and recognition
+      try {
+        await Promise.all([
+          faceapi.nets.ssdMobilenetv1.loadFromUri('/models'),
+          faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
+          faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
+          faceapi.nets.ageGenderNet.loadFromUri('/models')
+        ]);
+        console.log('✅ Face detection models loaded');
+      } catch (error) {
+        console.warn('⚠️ Face detection models not available. Using fallback methods:', error.message);
+        // Continue without face-api models - will use fallback methods
+      }
 
       // Initialize Tesseract.js for OCR (if available)
       if (window.Tesseract) {
-        this.ocrWorker = await window.Tesseract.createWorker();
-        await this.ocrWorker.loadLanguage('eng');
-        await this.ocrWorker.initialize('eng');
-        console.log('📖 OCR initialized successfully');
+        try {
+          this.ocrWorker = await window.Tesseract.createWorker();
+          await this.ocrWorker.loadLanguage('eng');
+          await this.ocrWorker.initialize('eng');
+          console.log('📖 OCR initialized successfully');
+        } catch (error) {
+          console.warn('⚠️ OCR initialization failed, using mock OCR:', error.message);
+        }
       } else {
         console.warn('⚠️ Tesseract.js not available, using mock OCR');
       }
@@ -39,7 +49,8 @@ export class IDScanner {
       console.log('✅ ID Scanner initialized successfully');
     } catch (error) {
       console.error('❌ Failed to initialize ID Scanner:', error);
-      throw new Error('Failed to initialize ID scanning system');
+      // Don't throw - allow system to continue with fallback methods
+      this.isInitialized = false;
     }
   }
 
@@ -186,14 +197,12 @@ export class IDScanner {
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const { width, height } = imageData;
 
-    // Determine ID type based on aspect ratio and size
+    // Determine ID type based on aspect ratio and size (Driving Licence removed)
     const aspectRatio = width / height;
     let idType = 'AADHAAR'; // default
 
     if (aspectRatio > 1.5 && aspectRatio < 1.8) {
       idType = 'AADHAAR';
-    } else if (aspectRatio > 1.3 && aspectRatio < 1.6) {
-      idType = 'DRIVING_LICENCE';
     } else if (aspectRatio > 0.6 && aspectRatio < 0.8) {
       idType = 'PASSPORT';
     } else if (aspectRatio > 1.4 && aspectRatio < 1.7) {
@@ -244,9 +253,6 @@ export class IDScanner {
     if (extractedText.includes('AADHAAR') || extractedText.includes('आधार')) {
       data.idType = 'AADHAAR';
       data.idNumber = this.extractAadhaarNumber(extractedText);
-    } else if (extractedText.includes('DRIVING LICENCE') || extractedText.includes('DL')) {
-      data.idType = 'DRIVING_LICENCE';
-      data.idNumber = this.extractDLNumber(extractedText);
     } else if (extractedText.includes('PASSPORT')) {
       data.idType = 'PASSPORT';
       data.idNumber = this.extractPassportNumber(extractedText);
@@ -817,18 +823,7 @@ Address: 123 Main Street, City, State - 123456
 Aadhaar Number: ${Array.from({length: 12}, () => Math.floor(Math.random() * 10)).join('')}
 आधार संख्या: ${Array.from({length: 12}, () => Math.floor(Math.random() * 10)).join('')}`;
 
-      case 'DRIVING_LICENCE':
-        return `DRIVING LICENCE
-चालक अनुज्ञप्ति
-Name: ${selectedName}
-नाम: ${selectedName}
-S/W/D of: FATHER NAME
-DOB: 15-08-1990
-जन्म तिथि: 15-08-1990
-Address: 123 Main Street, City, State - 123456
-पता: 123 मुख्य सड़क, शहर, राज्य - 123456
-DL Number: MH${Math.floor(Math.random() * 30) + 1990}${Array.from({length: 11}, () => Math.floor(Math.random() * 10)).join('')}
-Validity: 15-08-2040`;
+      // Driving Licence support removed
 
       case 'PASSPORT':
         return `PASSPORT
@@ -911,11 +906,6 @@ ID Number: ${Array.from({length: 12}, () => Math.floor(Math.random() * 10)).join
     return match ? match[0].replace(/\s/g, '') : null;
   }
 
-  extractDLNumber(text) {
-    const dlRegex = /[A-Z]{2}\d{2}\s?\d{11}/;
-    const match = text.match(dlRegex);
-    return match ? match[0].replace(/\s/g, '') : null;
-  }
 
   extractPassportNumber(text) {
     const passportRegex = /[A-Z]\d{7}/;

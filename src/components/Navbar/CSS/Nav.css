@@ -1,53 +1,49 @@
-
-.Nav{
-    /* border: 1px solid red; */
-    padding: 0.1rem;
-    /* display:block; */
-    /* overflow: hidden; */
+.Nav {
+    padding: 0.2rem 1rem;
     width: 100%;
-    /* border-radius: 0.5rem; */
     font-size: 1rem;
-    border-radius: 0rem;
-    /* background-color: #ecebeb58; */
-    background-color: black;
+    border-radius: 0.25rem;
+    background: linear-gradient(90deg, #0f172a, #0b1220);
     color: #89c4ee;
-    font-family:Verdana, Geneva, Tahoma, sans-serif;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
 }
-.Toggle{
-    /* border: 1px solid white; */
+
+.Toggle {
     margin: 0rem;
     background-color: #89c4ee;
     padding: 0.2rem;
+    border-radius: 0.25rem;
 }
-.AdminNav{
-    /* border: 1px solid red; */
+
+.AdminNav {
     padding: 0.1rem;
     width: 100%;
     font-size: 1rem;
-    background-color: black;
+    background: linear-gradient(90deg, #0f172a, #0b1220);
     color: #89c4ee;
-    font-family:Verdana, Geneva, Tahoma, sans-serif;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
 }
 
-.Heading{
-    /* border: 1px solid red; */
+.Heading {
     padding: 0.4rem 1rem;
-    font-weight: bold;
-    background-color: black;
-    /* margin-right: 10rem; */
+    font-weight: 700;
     font-size: 1.3rem;
-    color: #89c4ee
+    color: #89c4ee;
+    letter-spacing: 0.2px;
 }
-.Heading:hover{
-    color:#89c4ee;
+
+.Heading:hover {
+    color: #89c4ee;
 }
-.Nav-items-container{
+
+.Nav-items-container {
     /* border: 1px solid green; */
     margin: 0rem auto;
-    padding:0rem 3rem;
+    padding: 0rem 3rem;
 
 }
-.Nav-items{
+
+.Nav-items {
     /* border: 1px solid red; */
     margin: 0.5rem 0.5rem;
     padding: 0.3rem;
@@ -55,18 +51,46 @@
     border-radius: 0.5rem;
     color: #89c4ee
 }
-.Nav-items Button{
+
+.Nav-items Button {
     background-color: rgba(255, 255, 255, 0);
     padding: 0rem;
     border-color: rgba(255, 255, 255, 0);
     color: #89c4ee;
 }
-.Nav-items Button:hover{
+
+.Nav-items Button:hover {
     background-color: rgba(255, 255, 255, 0);
     border-color: rgba(255, 255, 255, 0);
     color: black;
 }
-.Nav-items:hover{
-    background-color: #89c4ee;
-    color: black;
+
+.Nav-items:hover {
+    background-color: rgba(137,196,238,0.12);
+    color: #e6f7ff;
+    border-radius: 0.4rem;
+}
+
+.notification-icon-btn {
+    background: none !important;
+    border: none !important;
+    cursor: pointer !important;
+    padding: 0.5rem 0.8rem !important;
+    margin: 0.5rem 0.5rem !important;
+    font-size: 1.3rem !important;
+    color: #89c4ee !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: relative !important;
+    transition: transform 0.2s ease, color 0.2s ease !important;
+}
+
+.notification-icon-btn:hover {
+    transform: scale(1.2) !important;
+    color: #fff !important;
+}
+
+.notification-icon-btn:focus {
+    outline: none !important;
 }

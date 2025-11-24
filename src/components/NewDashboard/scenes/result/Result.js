@@ -1,4 +1,7 @@
-import { Box } from "@mui/material";
+import { Box, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import { BASE_URL } from "../../../../helper";
 // import { tokens } from "../../theme";
 import { CssBaseline, ThemeProvider } from "@mui/material";
 import { ColorModeContext, useMode } from "../../theme";
@@ -10,6 +13,30 @@ import Sidebar from "../global/Sidebar";
 
 const Result = () => {
     const [theme, colorMode] = useMode();
+    const [elections, setElections] = useState([]);
+    const [selectedElection, setSelectedElection] = useState('');
+
+    useEffect(() => {
+        const fetchElections = async () => {
+            try {
+                const response = await axios.get(`${BASE_URL}/getElections`);
+                if (response.data.success) {
+                    setElections(response.data.elections);
+                    if (response.data.elections.length > 0) {
+                        setSelectedElection(response.data.elections[0]._id);
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching elections:", error);
+            }
+        };
+        fetchElections();
+    }, []);
+
+    const handleElectionChange = (event) => {
+        setSelectedElection(event.target.value);
+    };
+
     return (<ColorModeContext.Provider value={colorMode}>
         <ThemeProvider theme={theme}>
             <CssBaseline />
@@ -18,9 +45,27 @@ const Result = () => {
                 <main className="content">
                     <Topbar />
                     <Box m="20px">
-                        <Header title="RESULTS" subtitle="Election Result" />
+                        <Box display="flex" justifyContent="space-between" alignItems="center">
+                            <Header title="RESULTS" subtitle="Election Result" />
+                            <FormControl variant="outlined" sx={{ minWidth: 200 }}>
+                                <InputLabel id="election-select-label">Select Election</InputLabel>
+                                <Select
+                                    labelId="election-select-label"
+                                    id="election-select"
+                                    value={selectedElection}
+                                    onChange={handleElectionChange}
+                                    label="Select Election"
+                                >
+                                    {elections.map((election) => (
+                                        <MenuItem key={election._id} value={election._id}>
+                                            {election.title}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Box>
                         <Box height="75vh">
-                            <BarChart />
+                            <BarChart electionId={selectedElection} />
                         </Box>
                     </Box>
                 </main>

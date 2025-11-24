@@ -5,6 +5,19 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 200ms ease, color 200ms ease;
+  background: linear-gradient(180deg, #fbfbfb, #f3f6f9);
+}
+
+/* Global theme styles controlled by the `data-theme` attribute set on <html> */
+:root[data-theme="light"] body {
+  background: linear-gradient(180deg, #fbfbfb, #f3f6f9);
+  color: #111827;
+}
+
+:root[data-theme="dark"] body {
+  background: linear-gradient(180deg, #0b1220, #0f1724);
+  color: #e6eef8;
 }
 
 code {

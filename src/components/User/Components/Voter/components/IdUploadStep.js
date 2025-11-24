@@ -103,7 +103,7 @@ const IdUploadStep = ({ onVerificationComplete, onNext }) => {
         Upload Your ID Document
       </Typography>
       <Typography variant="body2" paragraph color="text.secondary">
-        Please upload a government-issued ID (Aadhar, Voter ID, or Driving License).
+        Please upload a government-issued ID (Aadhar or Voter ID).
         Make sure the photo on your ID is clearly visible.
       </Typography>
 

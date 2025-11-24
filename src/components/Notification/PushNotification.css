@@ -1,0 +1,139 @@
+/* Push Notification Toast Styles */
+.push-notification {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 16px;
+  border-top: 4px solid #3498db;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 400px;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.push-notification.fade-in {
+  animation: slideIn 0.3s ease-in-out forwards;
+}
+
+.push-notification.fade-out {
+  animation: slideOut 0.3s ease-in-out forwards;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(420px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(420px);
+    opacity: 0;
+  }
+}
+
+.push-notification-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+  min-width: 24px;
+  text-align: center;
+}
+
+.push-notification-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.push-notification-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.push-notification-message {
+  margin: 4px 0 0 0;
+  font-size: 13px;
+  color: #7f8c8d;
+  word-break: break-word;
+}
+
+.push-notification-close {
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 0;
+  margin: 0;
+  flex-shrink: 0;
+  transition: color 0.2s ease;
+  line-height: 1;
+}
+
+.push-notification-close:hover {
+  color: #333;
+}
+
+.push-notification-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: currentColor;
+  border-radius: 0 0 8px 0;
+  animation: progress 5s linear forwards;
+}
+
+@keyframes progress {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+@media (max-width: 768px) {
+  .push-notification {
+    max-width: calc(100% - 40px);
+    right: 20px;
+    left: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .push-notification {
+    top: 70px;
+    right: 10px;
+    left: 10px;
+    padding: 12px;
+    font-size: 12px;
+  }
+
+  .push-notification-icon {
+    font-size: 20px;
+  }
+
+  .push-notification-title {
+    font-size: 13px;
+  }
+
+  .push-notification-message {
+    font-size: 12px;
+  }
+}

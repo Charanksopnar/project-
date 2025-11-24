@@ -78,7 +78,7 @@ const Team = () => {
                     <SocialIcon className='SocialIcon' style={{ height: "30px", width: "30px" }} href="https://www.instagram.com/charan_k_sopnar?igsh=MW9vZ25odWFkNWh3cQ==/" target='_blank' url="www.instagram.com" />
                 </div>
 
-                <div className='Team-Content-Card' ref={revealRefRight}>
+                <div className='Team-Content-Card' ref={revealRefLeft}>
                     <img src={image2} className='image'></img>
                     <h3>Ravi M | <span>MERN Stack Developer</span></h3>
                     <p>Energetic Software Developer with a BE in Artificial Intelligence and Machine Learning, Engineering, proficient in C++, Python, and JavaScript. Skilled in creating interactive web applications, demonstrated through projects like Arwes-AI-Powered-chatbot. Experienced in embracing new technologies such as React.js and Node.js, and ready to bring innovative ideas and flexibility to dynamic teams.</p>                    

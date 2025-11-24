@@ -6,6 +6,7 @@ import { Route, Routes } from "react-router-dom";
 import NewDashBoard from "./scenes/dashboard/NewDashBoard";
 import NewVoters from "./scenes/voters/NewVoters";
 import './New.css'
+import { useEffect, useState } from 'react';
 
 
 /*
@@ -13,10 +14,19 @@ import './New.css'
 */
 function New() {
     const [theme, colorMode] = useMode();
+    const [animate, setAnimate] = useState(false);
+
+    useEffect(() => {
+        // trigger a short animation when the theme mode changes
+        setAnimate(true);
+        const t = setTimeout(() => setAnimate(false), 320);
+        return () => clearTimeout(t);
+    }, [theme.palette.mode]);
+
     return (<ColorModeContext.Provider value={colorMode}>
         <ThemeProvider theme={theme}>
             <CssBaseline />
-            <div className="appNew">
+            <div className={`appNew ${animate ? 'theme-animate' : ''}`}>
                 <Sidebar />
                 <main className="content">
 

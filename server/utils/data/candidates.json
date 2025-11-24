@@ -1,1 +1,53 @@
-[]
+[
+  {
+    "_id": "1",
+    "firstName": "John Doe",
+    "age": 45,
+    "party": "Democratic Party",
+    "bio": "Experienced leader with a focus on education and healthcare.",
+    "image": "default-candidate.jpg",
+    "symbol": "default-symbol.jpg",
+    "votes": 10
+  },
+  {
+    "_id": "2",
+    "firstName": "Jane Smith",
+    "age": 50,
+    "party": "Republican Party",
+    "bio": "Business leader with a strong economic policy.",
+    "image": "default-candidate.jpg",
+    "symbol": "default-symbol.jpg",
+    "votes": 8
+  },
+  {
+    "_id": "3",
+    "firstName": "Alex Johnson",
+    "age": 38,
+    "party": "Independent",
+    "bio": "Community organizer focused on social justice.",
+    "image": "default-candidate.jpg",
+    "symbol": "default-symbol.jpg",
+    "votes": 5
+  },
+  {
+    "_id": "4",
+    "firstName": "Narendra Modi",
+    "age": 58,
+    "party": "BJP",
+    "bio": "Community organizer focused on social justice.",
+    "image": "Narendra Modi.webp",
+    "symbol": "1763547121578-BJP LOGO.webp",
+    "votes": 8
+  },
+  {
+    "_id": "5",
+    "firstName": "Siddaramaiah",
+    "fullName": "Siddaramaiah ",
+    "age": 77,
+    "party": "Indian National Congress",
+    "bio": "Siddaramaiah is an Indian politician and the current Chief Minister of Karnataka, serving in his second term since May 2023. A member of the Indian National Congress (INC) party, he is known for his advocacy for social justice and the welfare of minorities, backward classes, and Dalits",
+    "image": "1763636599280-Siddaramaiah.jpg",
+    "symbol": "1763636599281-Indian_National_Congress_hand_logo.png",
+    "votes": 0
+  }
+]

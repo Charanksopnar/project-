@@ -11,10 +11,16 @@ import PersonOutlinedIcon from "@mui/icons-material/PersonOutlined";
 import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
 import PieChartlinedIcon from "@mui/icons-material/PieChartOutlined";
 import BarChartOutlinedIcon from "@mui/icons-material/BarChartOutlined";
+import TimelineIcon from "@mui/icons-material/Timeline";
 import EventIcon from '@mui/icons-material/Event';
 import AddIcon from '@mui/icons-material/Add';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import NotificationsOutlinedIcon from '@mui/icons-material/NotificationsOutlined';
 import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
+import SettingsIcon from '@mui/icons-material/Settings';
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
+import AssessmentIcon from '@mui/icons-material/Assessment';
+import BugReportIcon from '@mui/icons-material/BugReport';
 
 const Item = ({ title, to, icon, selected, setSelected }) => {
     const theme = useTheme();
@@ -41,14 +47,14 @@ const Sidebar = () => {
     return (
         <Box display="inline-flex"
             sx={{
-                "& .pro-sidebar":{
-                    width:"240px",
-                    minWidth:"240px"
+                "& .pro-sidebar": {
+                    width: "240px",
+                    minWidth: "240px"
                 },
-                "& .pro-item-content p":{
-                    color:colors.grey[100]
+                "& .pro-item-content p": {
+                    color: colors.grey[100]
                 },
-                "& .pro-item-content:hover":{
+                "& .pro-item-content:hover": {
                     color: "#868dfb",
                 },
                 "& .pro-sidebar-inner": {
@@ -59,7 +65,7 @@ const Sidebar = () => {
                 },
                 "& .pro-inner-item": {
                     padding: "5px 3px 5px 20px !important",
-                    width:"100%",
+                    width: "100%",
                 },
                 "& .pro-inner-item:hover": {
                     color: "#868dfb !important",
@@ -67,7 +73,7 @@ const Sidebar = () => {
                 "& .pro-menu-item.active": {
                     color: "#6870fa !important",
                 },
-                position:"relative",
+                position: "relative",
             }}
         >
             <ProSidebar collapsed={isCollapsed}>
@@ -95,33 +101,6 @@ const Sidebar = () => {
                             </Box>
                         )}
                     </MenuItem>
-
-                    {/* {!isCollapsed && (
-                        <Box mb="25px">
-                            <Box display="flex" justifyContent="center" alignItems="center">
-                                <img
-                                    alt="profile-user"
-                                    width="100px"
-                                    height="100px"
-                                    src={`../../assets/user.png`}
-                                    style={{ cursor: "pointer", borderRadius: "50%" }}
-                                />
-                            </Box>
-                            <Box textAlign="center">
-                                <Typography
-                                    variant="h2"
-                                    color={colors.grey[100]}
-                                    fontWeight="bold"
-                                    sx={{ m: "10px 0 0 0" }}
-                                >
-                                    Ed Roh
-                                </Typography>
-                                <Typography variant="h5" color={colors.greenAccent[500]}>
-                                    VP Fancy Admin
-                                </Typography>
-                            </Box>
-                        </Box>
-                    )} */}
 
                     <Box paddingLeft={isCollapsed ? undefined : "1%"}>
                         <Item
@@ -191,6 +170,13 @@ const Sidebar = () => {
                             setSelected={setSelected}
                         />
                         <Item
+                            title="Notifications"
+                            to="/admin/notifications"
+                            icon={<NotificationsOutlinedIcon />}
+                            selected={selected}
+                            setSelected={setSelected}
+                        />
+                        <Item
                             title="Invalid Votes"
                             to="/invalidVotes"
                             icon={<ErrorOutlineIcon />}
@@ -198,7 +184,41 @@ const Sidebar = () => {
                             setSelected={setSelected}
                         />
 
-
+                        <Typography
+                            variant="h6"
+                            color={colors.grey[300]}
+                            sx={{ m: "15px 0 5px 20px" }}
+                        >
+                            Admin Config
+                        </Typography>
+                        <Item
+                            title="Region Election"
+                            to="/admin/region-election"
+                            icon={<SettingsIcon />}
+                            selected={selected}
+                            setSelected={setSelected}
+                        />
+                        <Item
+                            title="Candidate Mgmt"
+                            to="/admin/candidate-management"
+                            icon={<PersonOutlinedIcon />}
+                            selected={selected}
+                            setSelected={setSelected}
+                        />
+                        <Item
+                            title="KYC Review"
+                            to="/admin/kyc-review"
+                            icon={<VerifiedUserIcon />}
+                            selected={selected}
+                            setSelected={setSelected}
+                        />
+                        <Item
+                            title="Audit Logs"
+                            to="/Admin/audits"
+                            icon={<AssessmentIcon />}
+                            selected={selected}
+                            setSelected={setSelected}
+                        />
 
                         <Typography
                             variant="h6"
@@ -218,6 +238,28 @@ const Sidebar = () => {
                             title="Pie Chart"
                             to="/PieChart"
                             icon={<PieChartlinedIcon />}
+                            selected={selected}
+                            setSelected={setSelected}
+                        />
+                        <Item
+                            title="Line Chart"
+                            to="/LineChart"
+                            icon={<TimelineIcon />}
+                            selected={selected}
+                            setSelected={setSelected}
+                        />
+
+                        <Typography
+                            variant="h6"
+                            color={colors.grey[300]}
+                            sx={{ m: "15px 0 5px 20px" }}
+                        >
+                            System
+                        </Typography>
+                        <Item
+                            title="Diagnostic"
+                            to="/diagnostic"
+                            icon={<BugReportIcon />}
                             selected={selected}
                             setSelected={setSelected}
                         />

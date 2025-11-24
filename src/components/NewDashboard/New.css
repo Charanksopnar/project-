@@ -27,6 +27,21 @@ body,
     font-weight: 300;
 }
 
+@keyframes themeSwitch {
+    from {
+        opacity: 0.88;
+        transform: scale(0.985);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.theme-animate{
+    animation: themeSwitch 280ms ease-out both;
+}
+
 ::-webkit-scrollbar{
     width: 10px;
 }

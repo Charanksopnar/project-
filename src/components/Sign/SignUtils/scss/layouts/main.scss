@@ -134,17 +134,23 @@ input[type=checkbox]:not(old):checked + label > span:before{
     width: auto;
 }
 
-label {
+.signup-form label,
+.signin-form label,
+.register-form label {
     position: absolute;
     left: 0;
     top: 50%;
     @include transform(translateY(-50%));
     color: $black-color;
 }
-.label-has-error {
+.signup-form .label-has-error,
+.signin-form .label-has-error,
+.register-form .label-has-error {
     top: 22%;
 }
-label.error {
+.signup-form label.error,
+.signin-form label.error,
+.register-form label.error {
     position: relative;
     background: url('../images/unchecked.gif') no-repeat;
     background-position-y: 3px;
@@ -152,7 +158,9 @@ label.error {
     display: block;
     margin-top: 20px;
 }
-label.valid {
+.signup-form label.valid,
+.signin-form label.valid,
+.register-form label.valid {
     display: block;
 
     position: absolute;
@@ -173,7 +181,9 @@ label.valid {
         color: green;
     }
 }
-.label-agree-term {
+.signup-form .label-agree-term,
+.signin-form .label-agree-term,
+.register-form .label-agree-term {
     position: relative;
     top: 0%;
     @include transform(translateY(0));

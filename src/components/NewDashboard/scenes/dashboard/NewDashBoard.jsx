@@ -15,17 +15,17 @@ import StatBox from "../../newComponents/StatBox";
 import "../../New.css"
 import axios from 'axios';
 import { BASE_URL } from '../../../../helper';
+import { useRealtime } from '../../../../context/RealtimeContext';
 
 const NewDashboard = () => {
+    // Real-time context
+    const { socket, connected, candidatesData, dashboardData, electionsData } = useRealtime();
+
     const [candidates, setCandidates] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [dashboardLoading, setDashboardLoading] = useState(true);
+    const [candidatesLoading, setCandidatesLoading] = useState(true);
     const [error, setError] = useState(null);
-    const upcomingElections = [
-        { id: '1', name: 'Presidential Election', date: '2024-11-05' },
-        { id: '2', name: 'Senate Election', date: '2024-11-05' },
-        { id: '3', name: 'Governor Election', date: '2024-11-05' },
-        { id: '4', name: 'Local Council Election', date: '2024-11-05' },
-    ];
+    const [upcomingElections, setUpcomingElections] = useState([]);
     const [data, setData] = useState({
         voters: 0,
         candidates: 0,
@@ -34,37 +34,91 @@ const NewDashboard = () => {
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
 
+    // Fetch initial data
     useEffect(() => {
-        setLoading(true);
-        axios.get(`${BASE_URL}/getDashboardData`)
+        setDashboardLoading(true);
+        axios.get(`${BASE_URL}/api/getDashboardData`)
             .then((response) => {
+                console.log('✅ Dashboard data fetched:', response.data);
                 const cardData = response.data.DashboardData;
                 setData({
                     voters: cardData.voterCount,
                     candidates: cardData.candidateCount,
                     voted: cardData.votersVoted,
                 });
-                setLoading(false);
+                setDashboardLoading(false);
             })
             .catch(err => {
-                console.error("Error fetching data: ", err)
-                setError(error);
-                setLoading(false);
+                console.error("Error fetching dashboard data: ", err);
+                setError(err);
+                setDashboardLoading(false);
             });
     }, [])
+
+    // Fetch initial candidates
     useEffect(() => {
-        setLoading(true);
+        setCandidatesLoading(true);
         axios.get(`${BASE_URL}/getCandidate`)
             .then((response) => {
+                console.log('✅ Candidates fetched:', response.data);
                 setCandidates(response.data.candidate);
-                setLoading(false);
+                setCandidatesLoading(false);
             })
             .catch(err => {
-                console.error("Error fetching data: ", err)
+                console.error("Error fetching candidates: ", err);
                 setError(err);
-                setLoading(false);
+                setCandidatesLoading(false);
             });
     }, []);
+
+    // Listen for real-time candidate updates
+    useEffect(() => {
+        if (candidatesData && candidatesData.length > 0) {
+            console.log('📊 Real-time candidates update received:', candidatesData);
+            setCandidates(candidatesData);
+        }
+    }, [candidatesData]);
+
+    // Listen for real-time dashboard updates
+    useEffect(() => {
+        if (dashboardData) {
+            console.log('📊 Real-time dashboard update received:', dashboardData);
+            setData({
+                voters: dashboardData.voterCount || 0,
+                candidates: dashboardData.candidateCount || 0,
+                voted: dashboardData.votersVoted || 0,
+            });
+        }
+    }, [dashboardData]);
+
+    // Listen for real-time election updates
+    useEffect(() => {
+        if (electionsData && electionsData.length > 0) {
+            console.log('📋 Real-time elections update received:', electionsData);
+            const formatted = electionsData.map(el => ({
+                id: el._id?.toString() || el.id,
+                name: el.name || el.title,
+                date: el.date || el.startDate,
+                status: el.status || 'upcoming',
+                title: el.name || el.title,
+                startDate: el.startDate,
+                endDate: el.endDate,
+                description: el.description
+            }));
+            setUpcomingElections(formatted);
+        } else {
+            // Fallback: Still show default elections but in production these would come from API
+            setUpcomingElections([
+                { id: '1', name: 'Presidential Election', date: '2024-11-05', status: 'upcoming', title: 'Presidential Election' },
+                { id: '2', name: 'Senate Election', date: '2024-11-05', status: 'upcoming', title: 'Senate Election' },
+                { id: '3', name: 'Governor Election', date: '2024-11-05', status: 'upcoming', title: 'Governor Election' },
+                { id: '4', name: 'Local Council Election', date: '2024-11-05', status: 'upcoming', title: 'Local Council Election' },
+            ]);
+        }
+    }, [electionsData]);
+
+    const loading = dashboardLoading || candidatesLoading;
+
     if (loading) {
         return <CircularProgress />;
     }

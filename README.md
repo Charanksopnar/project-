@@ -284,4 +284,58 @@ To use the ML system, navigate to the `ML-Document-Classification-System` direct
 
 ---
 
+## 🛡️ KYC / Voter Verification Flow
+
+This system enforces Know Your Customer (KYC) verification before voting. The flow is as follows:
+
+1. **Registration Page**: Users register with their details. The registration form includes a "Verification (KYC)" section where users can:
+   - Enter their Voter ID
+   - Upload a government-issued ID document (optional at registration)
+   - Provide required metadata (name, DOB, address)
+   - Choose to "Skip verification for now" (sets their `verificationStatus` to `skipped`)
+
+2. **Verification Enforcement**:
+   - Users who skip or do not complete KYC can register, but **cannot vote** until their verification is completed and approved.
+   - On any voting page, if the user's `verificationStatus` is not `verified`, an interrupting modal/page appears, explaining that verification is required before voting. The KYC form is prefilled with saved registration values.
+   - Users can complete verification (submit KYC, upload ID, etc.) or cancel and return to the voting list.
+
+3. **Verification Status Display**:
+   - The user's verification status (Verified / Pending / Not Verified) is shown in the header and election pages, with a link to start or resume verification.
+
+4. **Admin Review**:
+   - Submitted KYC is set to `pending` and must be approved by an admin (if applicable) before the user can vote.
+
+5. **File Storage & Security**:
+   - Uploaded ID documents are stored securely on the server. All transmissions use secure endpoints.
+
+### Manual Test Steps
+
+1. **Register a New Voter**
+   - Go to the registration page.
+   - Fill in all required fields.
+   - Optionally upload an ID document, or click "Skip verification for now".
+   - Complete registration.
+
+2. **Attempt to Vote Without Verification**
+   - Log in as the new voter.
+   - Go to any election/voting page.
+   - You should see a modal/page requiring you to complete verification before voting.
+
+3. **Complete Verification**
+   - Click the provided link or button to start/resume verification.
+   - Fill in the KYC form and upload required documents.
+   - Submit the form. Status should become `pending`.
+   - (If admin approval is required, log in as admin and approve the KYC.)
+
+4. **Vote After Verification**
+   - Once your status is `verified`, return to the voting page.
+   - You should now be able to cast your vote.
+
+5. **Check Status Display**
+   - Your verification status should be visible in the header and election pages, with a link to resume or view verification.
+
+---
+
+For any issues, check the browser console and server logs for error messages.
+
 **Happy Voting! 🗳️**

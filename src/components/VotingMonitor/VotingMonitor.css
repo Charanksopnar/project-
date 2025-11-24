@@ -1,0 +1,14 @@
+.vm-root { font-family: Inter, Arial, sans-serif; color: #0b1226 }
+.vm-header { margin-bottom: 8px }
+.vm-sub { color: #6b7280 }
+.vm-grid { display:flex; gap:20px }
+.vm-video { width:640px; height:440px; border-radius:8px; border:1px solid #dfe8ff; background:#fff }
+.vm-svg { width:100%; height:100% }
+.vm-side { width:320px; display:flex; flex-direction:column; gap:12px }
+.vm-status { background:#fbfbff; border:1px solid #e8eaff; padding:10px; border-radius:6px }
+.vm-warning { background:#fff7f0; border:1px solid #ffddb0; padding:10px; border-radius:6px }
+.vm-warning-title { font-weight:700 }
+.vm-actions { display:flex; gap:8px }
+.vm-btn { padding:10px 12px; border-radius:6px; border:none; cursor:pointer }
+.vm-btn.primary { background:#6c4df5; color:#fff }
+.vm-footer { margin-top:12px; color:#6b7280 }
